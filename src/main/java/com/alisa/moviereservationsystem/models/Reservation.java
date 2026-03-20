@@ -22,7 +22,7 @@ public class Reservation {
     private Long id;
 
     @CreationTimestamp
-    private Instant dateTime;
+    private Instant timeStamp;
 
     private Float generalPrice;
 
