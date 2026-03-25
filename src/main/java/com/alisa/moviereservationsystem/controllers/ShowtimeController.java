@@ -1,9 +1,11 @@
 package com.alisa.moviereservationsystem.controllers;
 
+import com.alisa.moviereservationsystem.dto.createDto.CreateShowtimeDto;
+import com.alisa.moviereservationsystem.dto.returnDto.ReturnShowtimeDto;
+import com.alisa.moviereservationsystem.dto.updateDto.UpdateShowtimeDto;
 import com.alisa.moviereservationsystem.models.Showtime;
 import com.alisa.moviereservationsystem.services.ShowtimeService;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,12 +19,12 @@ public class ShowtimeController {
     private final ShowtimeService showtimeService;
 
     @PostMapping
-    public ResponseEntity<Showtime> createShowtime(@RequestBody Showtime showtime) {
+    public ResponseEntity<ReturnShowtimeDto> createShowtime(@RequestBody CreateShowtimeDto showtime) {
         return ResponseEntity.ok(showtimeService.createShowtime(showtime));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable Long id, @RequestBody Showtime showtime) {
+    public ResponseEntity<ReturnShowtimeDto> updateShowtime(@PathVariable Long id, @RequestBody UpdateShowtimeDto showtime) {
         return ResponseEntity.ok(showtimeService.updateShowtime(id, showtime));
     }
 
@@ -32,12 +34,17 @@ public class ShowtimeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Showtime> findShowtimeById(@PathVariable Long id) {
+    public ResponseEntity<ReturnShowtimeDto> findShowtimeById(@PathVariable Long id) {
         return ResponseEntity.ok(showtimeService.findShowtimeById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Showtime>> findAllShowtimes() {
+    public ResponseEntity<List<ReturnShowtimeDto>> findAllShowtimes() {
         return ResponseEntity.ok(showtimeService.findAllShowtimes());
+    }
+
+    @GetMapping("/{movieId}/movie")
+    public ResponseEntity<List<ReturnShowtimeDto>> retrieveAllShowtimesByMovie(@PathVariable Long movieId) {
+        return ResponseEntity.ok(showtimeService.getAllShowtimesForMovie(movieId));
     }
 }

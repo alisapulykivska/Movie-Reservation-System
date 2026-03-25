@@ -1,5 +1,8 @@
 package com.alisa.moviereservationsystem.controllers;
 
+import com.alisa.moviereservationsystem.dto.createDto.CreateCustomUserDto;
+import com.alisa.moviereservationsystem.dto.returnDto.ReturnCustomUserDto;
+import com.alisa.moviereservationsystem.dto.updateDto.UpdateCustomUserDto;
 import com.alisa.moviereservationsystem.models.CustomUser;
 import com.alisa.moviereservationsystem.services.CustomUserService;
 import lombok.AllArgsConstructor;
@@ -16,12 +19,12 @@ public class CustomUserController {
     private final CustomUserService customUserService;
 
     @PostMapping
-    public ResponseEntity<CustomUser> createUser(@RequestBody CustomUser user){
+    public ResponseEntity<ReturnCustomUserDto> createUser(@RequestBody CreateCustomUserDto user) {
         return ResponseEntity.ok(customUserService.createUser(user));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomUser> updateUser(@PathVariable Long id, @RequestBody CustomUser user) {
+    public ResponseEntity<ReturnCustomUserDto> updateUser(@PathVariable Long id, @RequestBody UpdateCustomUserDto user) {
         return ResponseEntity.ok(customUserService.updateUser(id, user));
     }
 
@@ -31,12 +34,12 @@ public class CustomUserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CustomUser> findUserById(@PathVariable Long id) {
+    public ResponseEntity<ReturnCustomUserDto> findUserById(@PathVariable Long id) {
         return ResponseEntity.ok(customUserService.findUserById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<CustomUser>> findAllUsers() {
+    public ResponseEntity<List<ReturnCustomUserDto>> findAllUsers() {
         return ResponseEntity.ok(customUserService.findAllUsers());
     }
 }

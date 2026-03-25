@@ -1,7 +1,13 @@
 package com.alisa.moviereservationsystem.services;
 
+import com.alisa.moviereservationsystem.dto.createDto.CreateHallDto;
+import com.alisa.moviereservationsystem.dto.returnDto.ReturnCustomUserDto;
+import com.alisa.moviereservationsystem.dto.returnDto.ReturnHallDto;
+import com.alisa.moviereservationsystem.dto.updateDto.UpdateHallDto;
 import com.alisa.moviereservationsystem.models.Hall;
+import com.alisa.moviereservationsystem.models.Seat;
 import com.alisa.moviereservationsystem.repositories.HallRepository;
+import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
@@ -14,33 +20,62 @@ import java.util.List;
 public class HallService {
 
     private final HallRepository hallRepository;
+    private final SeatRepository seatRepository;
 
-    public Hall createHall(Hall hall) {
-        return hallRepository.save(hall);
+    public ReturnHallDto createHall(CreateHallDto hall) {
+        Hall newHall = new Hall();
+        newHall.setHallNumber(hall.hallNumber());
+        List<Seat> seats = seatRepository.findAllById(hall.seatIds());
+        newHall.setSeats(seats);
+
+        Hall savedHall = hallRepository.save(newHall);
+
+        return new ReturnHallDto(
+                savedHall.getId(),
+                savedHall.getHallNumber(),
+                savedHall.getSeats().stream().map(Seat :: getId).toList()
+        );
     }
 
-    public Hall updateHall(Long id, Hall hall) {
+    public ReturnHallDto updateHall(Long id, UpdateHallDto hall) {
         Hall oldHall = hallRepository.findById(id)
                 .orElseThrow(EntityExistsException::new);
         if(oldHall == null) {
             throw new IllegalArgumentException("Hall information is null");
         } else {
-            if(hall.getHallNumber() != null) {
-                oldHall.setHallNumber(hall.getHallNumber());
+            if(hall.hallNumber() != null) {
+                oldHall.setHallNumber(hall.hallNumber());
             }
         }
-        return hallRepository.save(oldHall);
+        Hall savedHall = hallRepository.save(oldHall);
+        return new ReturnHallDto(
+                savedHall.getId(),
+                savedHall.getHallNumber(),
+                savedHall.getSeats().stream().map(Seat :: getId).toList()
+        );
     }
 
     public void deleteHall(Long id) {
         hallRepository.deleteById(id);
     }
 
-    public Hall findHallById(Long id) {
-        return hallRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+    public ReturnHallDto findHallById(Long id) {
+        Hall hall = hallRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+        return new ReturnHallDto(
+                hall.getId(),
+                hall.getHallNumber(),
+                hall.getSeats().stream().map(Seat :: getId).toList()
+        );
     }
 
-    public List<Hall> findAllHalls() {
-        return hallRepository.findAll();
+    public List<ReturnHallDto> findAllHalls() {
+        return hallRepository.findAll()
+                .stream().
+                map(hall -> new ReturnHallDto(
+                      hall.getId(),
+                      hall.getHallNumber(),
+                      hall.getSeats().stream().map(Seat :: getId).toList()
+                ))
+                .toList();
     }
 }
