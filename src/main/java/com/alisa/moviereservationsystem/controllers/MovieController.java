@@ -1,5 +1,8 @@
 package com.alisa.moviereservationsystem.controllers;
 
+import com.alisa.moviereservationsystem.dto.createDto.CreateMovieDto;
+import com.alisa.moviereservationsystem.dto.returnDto.ReturnMovieDto;
+import com.alisa.moviereservationsystem.dto.updateDto.UpdateMovieDto;
 import com.alisa.moviereservationsystem.models.Movie;
 import com.alisa.moviereservationsystem.services.MovieService;
 import lombok.AllArgsConstructor;
@@ -16,12 +19,12 @@ public class MovieController {
     private final MovieService movieService;
 
     @PostMapping
-    public ResponseEntity<Movie> creeateMoivie(@RequestBody Movie movie) {
+    public ResponseEntity<ReturnMovieDto> createMovie(@RequestBody CreateMovieDto movie) {
         return ResponseEntity.ok(movieService.createMovie(movie));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Long id, @RequestBody Movie movie) {
+    public ResponseEntity<ReturnMovieDto> updateMovie(@PathVariable Long id, @RequestBody UpdateMovieDto movie) {
         return ResponseEntity.ok(movieService.updateMovie(id, movie));
     }
 
@@ -31,12 +34,12 @@ public class MovieController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Movie> findMovieById(@PathVariable Long id) {
+    public ResponseEntity<ReturnMovieDto> findMovieById(@PathVariable Long id) {
         return ResponseEntity.ok(movieService.findMovieById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Movie>> findAllMovies() {
+    public ResponseEntity<List<ReturnMovieDto>> findAllMovies() {
         return ResponseEntity.ok(movieService.findAllMovies());
     }
 }

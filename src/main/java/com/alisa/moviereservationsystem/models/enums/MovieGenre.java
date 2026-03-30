@@ -9,5 +9,6 @@ public enum MovieGenre {
     Thriller,
     Comedy,
     Romance,
-    Sport
+    Sport,
+    ScienceFiction
 }

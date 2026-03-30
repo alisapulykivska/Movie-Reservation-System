@@ -1,7 +1,7 @@
 package com.alisa.moviereservationsystem.models.enums;
 
 public enum ShowtimeType {
-    Basic,
+    Standard,
     Premiere,
     Preview,
 }

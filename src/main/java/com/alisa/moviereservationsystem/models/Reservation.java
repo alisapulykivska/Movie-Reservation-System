@@ -27,6 +27,7 @@ public class Reservation {
     private Float generalPrice;
 
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private CustomUser user;
 
     @ManyToMany

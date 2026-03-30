@@ -1,7 +1,14 @@
 package com.alisa.moviereservationsystem.controllers;
 
+import com.alisa.moviereservationsystem.dto.createDto.CreateReservationDto;
+import com.alisa.moviereservationsystem.dto.returnDto.ReturnReservationDto;
+import com.alisa.moviereservationsystem.dto.updateDto.UpdateReservationDto;
 import com.alisa.moviereservationsystem.models.Reservation;
+import com.alisa.moviereservationsystem.models.Seat;
+import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
+import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import com.alisa.moviereservationsystem.services.ReservationService;
+import com.alisa.moviereservationsystem.services.SeatService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,12 +23,12 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping
-    public ResponseEntity<Reservation> createReservation(@RequestBody Reservation reservation) {
+    public ResponseEntity<ReturnReservationDto> createReservation(@RequestBody CreateReservationDto reservation) {
         return ResponseEntity.ok(reservationService.createReservation(reservation));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody Reservation reservation) {
+    public ResponseEntity<ReturnReservationDto> updateReservation(@PathVariable Long id, @RequestBody UpdateReservationDto reservation) {
         return ResponseEntity.ok(reservationService.updateReservation(id, reservation));
     }
 
@@ -31,12 +38,12 @@ public class ReservationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Reservation> findReservationById(@PathVariable Long id) {
+    public ResponseEntity<ReturnReservationDto> findReservationById(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.findReservationById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Reservation>> findAllReservations() {
+    public ResponseEntity<List<ReturnReservationDto>> findAllReservations() {
         return ResponseEntity.ok(reservationService.findAllReservations());
     }
 }

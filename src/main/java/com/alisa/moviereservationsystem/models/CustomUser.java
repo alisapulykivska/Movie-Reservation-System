@@ -24,6 +24,6 @@ public class CustomUser {
 
     private String email;
 
-    @OneToMany
+    @OneToMany(mappedBy = "user")
     private List<Reservation> reservations;
 }

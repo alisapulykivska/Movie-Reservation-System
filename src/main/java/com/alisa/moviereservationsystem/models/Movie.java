@@ -25,8 +25,9 @@ public class Movie {
 
     private String posterUrl;
 
+    @Enumerated(EnumType.STRING)
     private List<MovieGenre> genres;
 
-    @OneToMany
+    @OneToMany(mappedBy = "movie")
     private List<Showtime> showtimes;
 }

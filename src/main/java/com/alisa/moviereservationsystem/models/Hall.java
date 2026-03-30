@@ -20,6 +20,6 @@ public class Hall {
 
     private Integer hallNumber;
 
-    @OneToMany
+    @OneToMany(mappedBy = "hall")
     private List<Seat> seats;
 }
