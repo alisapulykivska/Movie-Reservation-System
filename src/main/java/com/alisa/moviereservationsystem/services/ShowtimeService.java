@@ -1,7 +1,6 @@
 package com.alisa.moviereservationsystem.services;
 
 import com.alisa.moviereservationsystem.dto.createDto.ShowtimeCreateDto;
-import com.alisa.moviereservationsystem.dto.reportDto.CapacityReturnDto;
 import com.alisa.moviereservationsystem.dto.returnDto.ShowtimeReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.ShowtimeUpdateDto;
 import com.alisa.moviereservationsystem.exceptions.BookedHallException;
