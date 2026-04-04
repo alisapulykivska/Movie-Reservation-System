@@ -4,5 +4,5 @@ import com.alisa.moviereservationsystem.models.enums.ShowtimeType;
 
 import java.time.OffsetDateTime;
 
-public record CreateShowtimeDto(OffsetDateTime dateTime, ShowtimeType showtimeType, Long movieId) {
+public record ShowtimeCreateDto(OffsetDateTime dateTime, ShowtimeType showtimeType, Long movieId, Long hallId) {
 }

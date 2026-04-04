@@ -1,11 +1,13 @@
 package com.alisa.moviereservationsystem.services;
 
-import com.alisa.moviereservationsystem.dto.createDto.CreateCustomUserDto;
-import com.alisa.moviereservationsystem.dto.returnDto.ReturnCustomUserDto;
-import com.alisa.moviereservationsystem.dto.updateDto.UpdateCustomUserDto;
+import com.alisa.moviereservationsystem.dto.createDto.CustomUserCreateDto;
+import com.alisa.moviereservationsystem.dto.returnDto.CustomUserReturnDto;
+import com.alisa.moviereservationsystem.dto.updateDto.CustomUserUpdateDto;
+import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
+import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.CustomUser;
+import com.alisa.moviereservationsystem.models.enums.UserRole;
 import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,25 +19,30 @@ public class CustomUserService {
 
     private final CustomUserRepository customUserRepository;
 
-    public ReturnCustomUserDto createUser(CreateCustomUserDto user) {
+    private CustomUserReturnDto toDto(CustomUser customUser) {
+        return new CustomUserReturnDto(
+                customUser.getId(),
+                customUser.getUsername(),
+                customUser.getPassword(),
+                customUser.getEmail(),
+                customUser.getUserRole()
+        );
+    }
+
+    public CustomUserReturnDto createUser(CustomUserCreateDto user) {
         CustomUser customUser = new CustomUser();
         customUser.setUsername(user.username());
         customUser.setPassword(user.password());
         customUser.setEmail(user.email());
         CustomUser savedUser = customUserRepository.save(customUser);
-        return new ReturnCustomUserDto(
-                savedUser.getId(),
-                savedUser.getUsername(),
-                savedUser.getPassword(),
-                savedUser.getEmail()
-        );
+        return toDto(savedUser);
     }
 
-    public ReturnCustomUserDto updateUser(Long id, UpdateCustomUserDto user) {
+    public CustomUserReturnDto updateUser(Long id, CustomUserUpdateDto user) {
         CustomUser oldUser = customUserRepository.findById(id)
-                .orElseThrow(EntityNotFoundException::new);
+                .orElseThrow(() -> new InformationNotFoundException("CustomUser", id));
         if(user == null) {
-            throw new IllegalArgumentException("User information is null");
+            throw new InformationIsNullException("User information is null");
         } else {
             if(user.username() != null && !user.username().isEmpty()){
                 oldUser.setUsername(user.username());
@@ -48,37 +55,30 @@ public class CustomUserService {
             }
         }
         CustomUser savedUser = customUserRepository.save(oldUser);
-        return new ReturnCustomUserDto(
-                savedUser.getId(),
-                savedUser.getUsername(),
-                savedUser.getPassword(),
-                savedUser.getEmail()
-        );
+        return toDto(savedUser);
     }
 
     public void deleteUser(Long id) {
         customUserRepository.deleteById(id);
     }
 
-    public ReturnCustomUserDto findUserById(Long id) {
-        CustomUser user = customUserRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-        return new ReturnCustomUserDto(
-                user.getId(),
-                user.getUsername(),
-                user.getPassword(),
-                user.getEmail()
-        );
+    public CustomUserReturnDto findUserById(Long id) {
+        CustomUser user = customUserRepository.findById(id).orElseThrow(() ->
+                new InformationNotFoundException("CustomUser", id));
+        return toDto(user);
     }
 
-    public List<ReturnCustomUserDto> findAllUsers() {
+    public List<CustomUserReturnDto> findAllUsers() {
         return customUserRepository.findAll()
                 .stream()
-                .map(user -> new ReturnCustomUserDto(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getPassword(),
-                        user.getEmail()
-                ))
+                .map(this::toDto)
                 .toList();
+    }
+
+    public CustomUserReturnDto promoteToAdmin(Long id) {
+        CustomUser customUser =  customUserRepository.findById(id)
+                .orElseThrow(() -> new InformationNotFoundException("CustomUser", id));
+        customUser.setUserRole(UserRole.ADMIN);
+        return toDto(customUserRepository.save(customUser));
     }
 }

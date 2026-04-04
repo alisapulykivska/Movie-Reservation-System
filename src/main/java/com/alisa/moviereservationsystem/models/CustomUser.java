@@ -1,5 +1,6 @@
 package com.alisa.moviereservationsystem.models;
 
+import com.alisa.moviereservationsystem.models.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,6 +24,9 @@ public class CustomUser {
     private String password;
 
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    private UserRole userRole;
 
     @OneToMany(mappedBy = "user")
     private List<Reservation> reservations;
