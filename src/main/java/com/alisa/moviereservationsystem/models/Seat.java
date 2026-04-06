@@ -35,10 +35,4 @@ public class Seat {
     @ManyToOne
     @JoinColumn(name = "hall_id")
     private Hall hall;
-
-    @ManyToMany
-    private List<Showtime> showtimes;
-
-    @ManyToMany
-    private List<Reservation> reservations;
 }

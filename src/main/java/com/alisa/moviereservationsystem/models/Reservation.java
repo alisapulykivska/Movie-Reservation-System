@@ -1,5 +1,6 @@
 package com.alisa.moviereservationsystem.models;
 
+import com.alisa.moviereservationsystem.models.enums.ReservationStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,13 +27,18 @@ public class Reservation {
 
     private Float generalPrice;
 
+    @Enumerated(EnumType.STRING)
+    private ReservationStatus status;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private CustomUser user;
 
     @ManyToMany
+    @JoinTable(name = "reservation_seats")
     private List<Seat> seats;
 
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "showtime_id")
     private Showtime showtime;
 }

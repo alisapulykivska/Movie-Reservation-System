@@ -1,6 +1,6 @@
 package com.alisa.moviereservationsystem.models.enums;
 
-public enum UserRoles {
-    USER,
-    ADMIN
+public enum ShowtimeStatus {
+    Upcoming,
+    Completed
 }

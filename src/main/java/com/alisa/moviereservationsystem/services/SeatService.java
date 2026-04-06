@@ -1,13 +1,16 @@
 package com.alisa.moviereservationsystem.services;
 
-import com.alisa.moviereservationsystem.dto.createDto.CreateSeatDto;
-import com.alisa.moviereservationsystem.dto.returnDto.ReturnSeatDto;
-import com.alisa.moviereservationsystem.dto.updateDto.UpdateSeatDto;
+import com.alisa.moviereservationsystem.dto.createDto.SeatCreateDto;
+import com.alisa.moviereservationsystem.dto.returnDto.SeatReturnDto;
+import com.alisa.moviereservationsystem.dto.updateDto.SeatUpdateDto;
+import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
+import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.Hall;
 import com.alisa.moviereservationsystem.models.Seat;
+import com.alisa.moviereservationsystem.models.Showtime;
 import com.alisa.moviereservationsystem.repositories.HallRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.alisa.moviereservationsystem.repositories.ShowtimeRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +22,9 @@ public class SeatService {
 
     private final SeatRepository seatRepository;
     private final HallRepository hallRepository;
+    private final ShowtimeRepository showtimeRepository;
 
-    public ReturnSeatDto createSeat(CreateSeatDto seat) {
+    public SeatReturnDto createSeat(SeatCreateDto seat) {
         Seat newSeat = new Seat();
         newSeat.setSeatNumber(seat.seatNumber());
         newSeat.setRowNumber(seat.rowNumber());
@@ -28,27 +32,19 @@ public class SeatService {
         newSeat.setType(seat.type());
         newSeat.setStatus(seat.status());
         Hall hall = hallRepository.findById(seat.hallId())
-                .orElseThrow(EntityNotFoundException::new);
+                .orElseThrow(() -> new InformationNotFoundException("Hall", seat.hallId()));
         newSeat.setHall(hall);
 
         Seat savedSeat = seatRepository.save(newSeat);
 
-        return new ReturnSeatDto(
-                savedSeat.getId(),
-                savedSeat.getSeatNumber(),
-                savedSeat.getRowNumber(),
-                savedSeat.getPrice(),
-                savedSeat.getType(),
-                savedSeat.getStatus(),
-                savedSeat.getHall() != null ? savedSeat.getHall().getId() : null
-        );
+        return toReturnDto(savedSeat);
     }
 
-    public ReturnSeatDto updateSeat(Long id, UpdateSeatDto seat) {
-        Seat oldSeat = seatRepository.findById(id)
-                .orElseThrow(EntityNotFoundException::new);
+    public SeatReturnDto updateSeat(Long seatId, SeatUpdateDto seat) {
+        Seat oldSeat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new InformationNotFoundException("Seat", seatId));
         if(seat == null) {
-            throw new IllegalArgumentException("Seat information is null");
+            throw new InformationIsNullException("Seat information is null");
         } else {
             if(seat.seatNumber() != null) {
                 oldSeat.setSeatNumber(seat.seatNumber());
@@ -61,58 +57,45 @@ public class SeatService {
             }
         }
         Seat savedSeat = seatRepository.save(oldSeat);
-        return new ReturnSeatDto(
-                savedSeat.getId(),
-                savedSeat.getSeatNumber(),
-                savedSeat.getRowNumber(),
-                savedSeat.getPrice(),
-                savedSeat.getType(),
-                savedSeat.getStatus(),
-                savedSeat.getHall() != null ? savedSeat.getHall().getId() : null
-        );
+        return toReturnDto(savedSeat);
     }
 
-    public void deleteSeat(Long id) {
-        seatRepository.deleteById(id);
+    public void deleteSeat(Long seatId) {
+        seatRepository.deleteById(seatId);
     }
 
-    public ReturnSeatDto findSeatById(Long id) {
-        Seat seat = seatRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-        return new ReturnSeatDto(
+    public SeatReturnDto findSeatById(Long id) {
+        Seat seat = seatRepository.findById(id)
+                .orElseThrow(() -> new InformationNotFoundException("Seat", id));
+        return toReturnDto(seat);
+    }
+
+    public List<SeatReturnDto> findAllSeats() {
+        return seatRepository.findAll()
+                .stream()
+                .map(this::toReturnDto)
+                .toList();
+    }
+
+    public List<SeatReturnDto> getAllSeatsForShowtime(Long showtimeId) {
+        Showtime showtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new InformationNotFoundException("Showtime", showtimeId));
+        return showtime.getHall().getSeats()
+                .stream()
+                .map(this::toReturnDto)
+                .toList();
+    }
+
+    private SeatReturnDto toReturnDto(Seat seat) {
+        return new SeatReturnDto(
                 seat.getId(),
                 seat.getSeatNumber(),
                 seat.getRowNumber(),
                 seat.getPrice(),
                 seat.getType(),
                 seat.getStatus(),
-                seat.getHall() != null ? seat.getHall().getId() : null
+                seat.getHall().getId()
         );
     }
 
-    public List<ReturnSeatDto> findAllSeats() {
-        return seatRepository.findAll()
-                .stream()
-                .map(seat -> new ReturnSeatDto(
-                        seat.getId(),
-                        seat.getSeatNumber(),
-                        seat.getRowNumber(),
-                        seat.getPrice(),
-                        seat.getType(),
-                        seat.getStatus(),
-                        seat.getHall() != null ? seat.getHall().getId() : null
-                )).toList();
-    }
-
-    public List<ReturnSeatDto> getAllSeatsForShowtime(Long showtimeId) {
-        return seatRepository.findByShowtimes_Id(showtimeId)
-                .stream().map(seat -> new ReturnSeatDto(
-                        seat.getId(),
-                        seat.getSeatNumber(),
-                        seat.getRowNumber(),
-                        seat.getPrice(),
-                        seat.getType(),
-                        seat.getStatus(),
-                        seat.getHall() != null ? seat.getHall().getId() : null
-                )).toList();
-    }
 }

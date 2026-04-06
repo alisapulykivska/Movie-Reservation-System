@@ -1,11 +1,14 @@
 package com.alisa.moviereservationsystem.services;
 
-import com.alisa.moviereservationsystem.dto.createDto.CreateMovieDto;
-import com.alisa.moviereservationsystem.dto.returnDto.ReturnMovieDto;
-import com.alisa.moviereservationsystem.dto.updateDto.UpdateMovieDto;
+import com.alisa.moviereservationsystem.dto.createDto.MovieCreateDto;
+import com.alisa.moviereservationsystem.dto.returnDto.MovieReturnDto;
+import com.alisa.moviereservationsystem.dto.updateDto.MovieUpdateDto;
+import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
+import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.Movie;
+import com.alisa.moviereservationsystem.models.enums.MovieGenre;
+import com.alisa.moviereservationsystem.models.enums.ShowtimeStatus;
 import com.alisa.moviereservationsystem.repositories.MovieRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,26 +20,21 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
 
-    public ReturnMovieDto createMovie(CreateMovieDto movie) {
+    public MovieReturnDto createMovie(MovieCreateDto movie) {
         Movie newMovie = new Movie();
         newMovie.setTitle(movie.title());
         newMovie.setDescription(movie.description());
         newMovie.setGenres(movie.genres());
+        newMovie.setPosterUrl(movie.posterUrl());
         Movie savedMovie = movieRepository.save(newMovie);
-        return new ReturnMovieDto(
-                savedMovie.getId(),
-                savedMovie.getTitle(),
-                savedMovie.getDescription(),
-                savedMovie.getPosterUrl(),
-                savedMovie.getGenres()
-        );
+        return toReturnDto(savedMovie);
     }
 
-    public ReturnMovieDto updateMovie(Long id, UpdateMovieDto movie) {
-        Movie oldMovie = movieRepository.findById(id)
-                .orElseThrow(EntityNotFoundException::new);
+    public MovieReturnDto updateMovie(Long movieId, MovieUpdateDto movie) {
+        Movie oldMovie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new InformationNotFoundException("Movie", movieId));
         if(movie == null) {
-            throw new IllegalArgumentException("Movie information is null");
+            throw new InformationIsNullException("Movie information is null");
         } else {
             if(movie.title() != null && !movie.title().isEmpty()) {
                 oldMovie.setTitle(movie.title());
@@ -53,40 +51,57 @@ public class MovieService {
         }
 
         Movie savedMovie = movieRepository.save(oldMovie);
-        return new ReturnMovieDto(
-                savedMovie.getId(),
-                savedMovie.getTitle(),
-                savedMovie.getDescription(),
-                savedMovie.getPosterUrl(),
-                savedMovie.getGenres()
-        );
+        return toReturnDto(savedMovie);
     }
 
-    public void deleteMovie(Long id) {
-        movieRepository.deleteById(id);
+    public void deleteMovie(Long movieId) {
+        movieRepository.deleteById(movieId);
     }
 
-    public ReturnMovieDto findMovieById(Long id) {
-        Movie movie = movieRepository.findById(id).orElseThrow(EntityNotFoundException::new);
-        return new ReturnMovieDto(
+    public MovieReturnDto findMovieById(Long id) {
+        Movie movie = movieRepository.findById(id).orElseThrow(() -> new
+                InformationNotFoundException("Movie", id));
+        return toReturnDto(movie);
+    }
+
+    public List<MovieReturnDto> findAllMovies() {
+        return movieRepository.findAll()
+                .stream()
+                .map(this::toReturnDto)
+                .toList();
+    }
+
+    public List<MovieReturnDto> findAllMoviesByGenres(List<MovieGenre> genres) {
+        return movieRepository.findAll().stream()
+                .filter(movie -> movie.getGenres()
+                        .stream().anyMatch(genres::contains))
+                .filter(movie -> movie.getShowtimes().stream()
+                        .anyMatch(showtime -> showtime.getStatus() == ShowtimeStatus.Upcoming))
+                .map(this::toReturnDto)
+                .toList();
+    }
+
+    public List<MovieReturnDto> findMostPopularMovies() {
+        return movieRepository.findAllSortedByReservationCountDesc().stream()
+                .filter(movie -> movie.getShowtimes().stream()
+                        .anyMatch(showtime -> showtime.getStatus() == ShowtimeStatus.Upcoming))
+                .map(this::toReturnDto)
+                .toList();
+    }
+
+    public List<MovieReturnDto> findMoviesByTitle(String title) {
+        return movieRepository.findByTitleContainingIgnoreCase(title).stream()
+                .map(this::toReturnDto)
+                .toList();
+    }
+
+    private MovieReturnDto toReturnDto(Movie movie) {
+        return new MovieReturnDto(
                 movie.getId(),
                 movie.getTitle(),
                 movie.getDescription(),
                 movie.getPosterUrl(),
                 movie.getGenres()
         );
-    }
-
-    public List<ReturnMovieDto> findAllMovies() {
-        return movieRepository.findAll()
-                .stream()
-                .map(
-                movie -> new ReturnMovieDto(
-                        movie.getId(),
-                        movie.getTitle(),
-                        movie.getDescription(),
-                        movie.getPosterUrl(),
-                        movie.getGenres()
-                )).toList();
     }
 }

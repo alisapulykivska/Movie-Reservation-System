@@ -4,5 +4,5 @@ import com.alisa.moviereservationsystem.models.enums.ShowtimeType;
 
 import java.time.OffsetDateTime;
 
-public record UpdateShowtimeDto(OffsetDateTime dateTime, ShowtimeType showtimeType) {
+public record ShowtimeUpdateDto(OffsetDateTime dateTime, ShowtimeType showtimeType, Long hallId) {
 }

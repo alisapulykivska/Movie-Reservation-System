@@ -1,5 +1,6 @@
 package com.alisa.moviereservationsystem.models;
 
+import com.alisa.moviereservationsystem.models.enums.ShowtimeStatus;
 import com.alisa.moviereservationsystem.models.enums.ShowtimeType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,15 +24,17 @@ public class Showtime {
 
     private OffsetDateTime dateTime;
 
+    @Enumerated(EnumType.STRING)
     private ShowtimeType showtimeType;
+
+    @Enumerated(EnumType.STRING)
+    private ShowtimeStatus status;
 
     @ManyToOne
     @JoinColumn(name = "movie_id")
     private Movie movie;
 
-    @ManyToMany
-    private List<Seat> seats;
-
-    @OneToOne
-    private Reservation reservation;
+    @ManyToOne
+    @JoinColumn(name = "hall_id")
+    private Hall hall;
 }
