@@ -1,5 +1,8 @@
 package com.alisa.moviereservationsystem.controllers;
 
+import com.alisa.moviereservationsystem.dto.securityDto.ChangePasswordDto;
+import com.alisa.moviereservationsystem.dto.securityDto.LoginUserDto;
+import com.alisa.moviereservationsystem.dto.securityDto.RegisterUserDto;
 import com.alisa.moviereservationsystem.dto.createDto.CustomUserCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.CustomUserReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.CustomUserUpdateDto;
@@ -49,5 +52,26 @@ public class CustomUserController {
     @PatchMapping("/{id}/promote")
     public ResponseEntity<CustomUserReturnDto> promoteToAdmin(@PathVariable Long id) {
         return ResponseEntity.ok(customUserService.promoteToAdmin(id));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<CustomUserReturnDto> registerUser(@RequestBody RegisterUserDto registerUserDto) {
+        return ResponseEntity.ok(customUserService.register(registerUserDto));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> userLogin(@RequestBody LoginUserDto loginUserDto) {
+        return ResponseEntity.ok(customUserService.login(loginUserDto));
+    }
+
+    @PatchMapping("/{id}/change-password")
+    public ResponseEntity<CustomUserReturnDto> changePassword(@PathVariable Long id, @RequestBody ChangePasswordDto dto) {
+        return ResponseEntity.ok(customUserService.changePassword(id, dto));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/reset-password")
+    public ResponseEntity<CustomUserReturnDto> resetPassword(@PathVariable Long id, @RequestBody String newPassword) {
+        return ResponseEntity.ok(customUserService.resetPassword(id, newPassword));
     }
 }

@@ -13,9 +13,12 @@ import java.util.List;
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Long> {
 
-    @Query("SELECT m FROM Movie m JOIN m.showtimes s JOIN Reservation r ON r.showtime = s " +
-            "GROUP BY m ORDER BY COUNT(r) DESC")
-    List<Movie> findMostPopularMovies();
+    @Query(value = "SELECT m.* FROM movie m " +
+            "JOIN showtime s ON s.movie_id = m.id " +
+            "JOIN reservation r ON r.showtime_id = s.id " +
+            "GROUP BY m.id ORDER BY COUNT(r.id) DESC",
+            nativeQuery = true)
+    List<Movie> findAllSortedByReservationCountDesc();
 
     List<Movie> findByTitleContainingIgnoreCase(String title);
 }

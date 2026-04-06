@@ -24,18 +24,6 @@ public class SeatService {
     private final HallRepository hallRepository;
     private final ShowtimeRepository showtimeRepository;
 
-    private SeatReturnDto toDto(Seat seat) {
-        return new SeatReturnDto(
-                seat.getId(),
-                seat.getSeatNumber(),
-                seat.getRowNumber(),
-                seat.getPrice(),
-                seat.getType(),
-                seat.getStatus(),
-                seat.getHall().getId()
-        );
-    }
-
     public SeatReturnDto createSeat(SeatCreateDto seat) {
         Seat newSeat = new Seat();
         newSeat.setSeatNumber(seat.seatNumber());
@@ -49,12 +37,12 @@ public class SeatService {
 
         Seat savedSeat = seatRepository.save(newSeat);
 
-        return toDto(savedSeat);
+        return toReturnDto(savedSeat);
     }
 
-    public SeatReturnDto updateSeat(Long id, SeatUpdateDto seat) {
-        Seat oldSeat = seatRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Seat", id));
+    public SeatReturnDto updateSeat(Long seatId, SeatUpdateDto seat) {
+        Seat oldSeat = seatRepository.findById(seatId)
+                .orElseThrow(() -> new InformationNotFoundException("Seat", seatId));
         if(seat == null) {
             throw new InformationIsNullException("Seat information is null");
         } else {
@@ -69,23 +57,23 @@ public class SeatService {
             }
         }
         Seat savedSeat = seatRepository.save(oldSeat);
-        return toDto(savedSeat);
+        return toReturnDto(savedSeat);
     }
 
-    public void deleteSeat(Long id) {
-        seatRepository.deleteById(id);
+    public void deleteSeat(Long seatId) {
+        seatRepository.deleteById(seatId);
     }
 
     public SeatReturnDto findSeatById(Long id) {
         Seat seat = seatRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Seat", id));
-        return toDto(seat);
+        return toReturnDto(seat);
     }
 
     public List<SeatReturnDto> findAllSeats() {
         return seatRepository.findAll()
                 .stream()
-                .map(this::toDto)
+                .map(this::toReturnDto)
                 .toList();
     }
 
@@ -94,7 +82,20 @@ public class SeatService {
                 .orElseThrow(() -> new InformationNotFoundException("Showtime", showtimeId));
         return showtime.getHall().getSeats()
                 .stream()
-                .map(this::toDto)
+                .map(this::toReturnDto)
                 .toList();
     }
+
+    private SeatReturnDto toReturnDto(Seat seat) {
+        return new SeatReturnDto(
+                seat.getId(),
+                seat.getSeatNumber(),
+                seat.getRowNumber(),
+                seat.getPrice(),
+                seat.getType(),
+                seat.getStatus(),
+                seat.getHall().getId()
+        );
+    }
+
 }

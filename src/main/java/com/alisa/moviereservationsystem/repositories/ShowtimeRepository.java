@@ -16,8 +16,7 @@ public interface ShowtimeRepository extends JpaRepository<Showtime, Long> {
 
     List<Showtime> findByMovie_Id(Long movieId);
 
-    @Query("SELECT s FROM Showtime s WHERE s.dateTime >= :start AND s.dateTime < :end")
-    List<Showtime> findByDate(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+    List<Showtime> findByDateTimeGreaterThanEqualAndDateTimeLessThanEqual(OffsetDateTime start, OffsetDateTime end);
 
     List<Showtime> findByDateTimeBeforeAndStatus(OffsetDateTime dateTimeBefore, ShowtimeStatus status);
 

@@ -18,7 +18,7 @@ public class ShowtimeScheduler {
 
     private final ShowtimeRepository showtimeRepository;
 
-    @Scheduled(fixedRate = 3600000)
+    @Scheduled(fixedRate = 18000000)
     public void completePassedShowtimes() {
         List<Showtime> passedShowtimes = showtimeRepository
                 .findByDateTimeBeforeAndStatus(OffsetDateTime.now(), ShowtimeStatus.Upcoming);

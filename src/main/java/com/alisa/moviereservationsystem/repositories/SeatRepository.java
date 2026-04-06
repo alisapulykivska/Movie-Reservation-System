@@ -15,6 +15,5 @@ import java.util.List;
 public interface SeatRepository extends JpaRepository<Seat, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM Seat s WHERE s.id IN :ids")
-    List<Seat> findSeatsWithLock(@Param("ids") List<Long> ids);
+    List<Seat> findSeatsByIdIn(List<Long> ids);
 }

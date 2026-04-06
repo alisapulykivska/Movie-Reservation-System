@@ -19,19 +19,19 @@ public class ShowtimeController {
 
     private final ShowtimeService showtimeService;
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ShowtimeReturnDto> createShowtime(@RequestBody ShowtimeCreateDto showtime) {
         return ResponseEntity.ok(showtimeService.createShowtime(showtime));
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ShowtimeReturnDto> updateShowtime(@PathVariable Long id, @RequestBody ShowtimeUpdateDto showtime) {
         return ResponseEntity.ok(showtimeService.updateShowtime(id, showtime));
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteShowtime(@PathVariable Long id) {
         showtimeService.deleteShowtime(id);
@@ -42,7 +42,7 @@ public class ShowtimeController {
         return ResponseEntity.ok(showtimeService.findShowtimeById(id));
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<ShowtimeReturnDto>> findAllShowtimes() {
         return ResponseEntity.ok(showtimeService.findAllShowtimes());

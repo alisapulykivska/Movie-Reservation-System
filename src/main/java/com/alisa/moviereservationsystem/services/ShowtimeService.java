@@ -8,7 +8,7 @@ import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
 import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.Hall;
 import com.alisa.moviereservationsystem.models.Movie;
-import com.alisa.moviereservationsystem.models.Seat;
+import com.alisa.moviereservationsystem.models.Reservation;
 import com.alisa.moviereservationsystem.models.Showtime;
 import com.alisa.moviereservationsystem.models.enums.ReservationStatus;
 import com.alisa.moviereservationsystem.models.enums.ShowtimeStatus;
@@ -30,17 +30,6 @@ public class ShowtimeService {
     private final SeatRepository seatRepository;
     private final ReservationRepository reservationRepository;
     private final HallRepository hallRepository;
-
-    private ShowtimeReturnDto toDto(Showtime showtime) {
-        return new ShowtimeReturnDto(
-                showtime.getId(),
-                showtime.getDateTime(),
-                showtime.getShowtimeType(),
-                showtime.getStatus(),
-                showtime.getMovie().getId(),
-                showtime.getHall().getId()
-        );
-    }
 
     public ShowtimeReturnDto createShowtime(ShowtimeCreateDto showtime) {
         Showtime newShowtime = new Showtime();
@@ -64,12 +53,12 @@ public class ShowtimeService {
         newShowtime.setHall(hall);
 
         Showtime savedShowtime = showtimeRepository.save(newShowtime);
-        return toDto(savedShowtime);
+        return toReturnDto(savedShowtime);
     }
 
-    public ShowtimeReturnDto updateShowtime(Long id, ShowtimeUpdateDto showtime) {
-        Showtime oldShowtime = showtimeRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Showtime", id));
+    public ShowtimeReturnDto updateShowtime(Long showtimeId, ShowtimeUpdateDto showtime) {
+        Showtime oldShowtime = showtimeRepository.findById(showtimeId)
+                .orElseThrow(() -> new InformationNotFoundException("Showtime", showtimeId));
         if(showtime == null) {
             throw new InformationIsNullException("Showtime information is null");
         } else {
@@ -87,39 +76,50 @@ public class ShowtimeService {
         }
         Showtime savedShowtime = showtimeRepository.save(oldShowtime);
 
-        return toDto(savedShowtime);
+        return toReturnDto(savedShowtime);
     }
 
-    public void deleteShowtime(Long id) {
-        showtimeRepository.deleteById(id);
+    public void deleteShowtime(Long showtimeId) {
+        showtimeRepository.deleteById(showtimeId);
     }
 
     public ShowtimeReturnDto findShowtimeById(Long id) {
         Showtime showtime = showtimeRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Showtime", id));
-        return toDto(showtime);
+        return toReturnDto(showtime);
     }
 
     public List<ShowtimeReturnDto> findAllShowtimes() {
         return showtimeRepository.findAll()
                 .stream()
-                .map(this :: toDto)
+                .map(this :: toReturnDto)
                 .toList();
     }
 
     public List<ShowtimeReturnDto> getAllShowtimesForMovie(Long movieId) {
         return showtimeRepository.findByMovie_Id(movieId)
                 .stream()
-                .map(this::toDto)
+                .map(this::toReturnDto)
                 .toList();
     }
 
     public List<ShowtimeReturnDto> getShowtimeForDate(LocalDate date) {
         OffsetDateTime start = date.atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
         OffsetDateTime end = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
-        return showtimeRepository.findByDate(start, end)
+        return showtimeRepository.findByDateTimeGreaterThanEqualAndDateTimeLessThanEqual(start, end)
                 .stream()
-                .map(this::toDto)
+                .map(this::toReturnDto)
                 .toList();
+    }
+
+    private ShowtimeReturnDto toReturnDto(Showtime showtime) {
+        return new ShowtimeReturnDto(
+                showtime.getId(),
+                showtime.getDateTime(),
+                showtime.getShowtimeType(),
+                showtime.getStatus(),
+                showtime.getMovie().getId(),
+                showtime.getHall().getId()
+        );
     }
 }

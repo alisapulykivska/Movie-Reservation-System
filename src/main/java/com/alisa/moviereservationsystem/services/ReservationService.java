@@ -15,10 +15,12 @@ import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
 import com.alisa.moviereservationsystem.repositories.ReservationRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import com.alisa.moviereservationsystem.repositories.ShowtimeRepository;
+import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -30,21 +32,9 @@ public class ReservationService {
     private final SeatRepository seatRepository;
     private final ShowtimeRepository showtimeRepository;
 
-    private ReservationReturnDto toDto(Reservation reservation) {
-        return new ReservationReturnDto(
-                reservation.getId(),
-                reservation.getGeneralPrice(),
-                reservation.getStatus(),
-                reservation.getTimeStamp(),
-                reservation.getUser().getId(),
-                reservation.getSeats().stream().map(Seat :: getId).toList(),
-                reservation.getShowtime().getId()
-        );
-    }
-
     @Transactional
     public ReservationReturnDto createReservation(ReservationCreateDto reservation) {
-        List<Seat> seats = seatRepository.findSeatsWithLock(reservation.seatIds());
+        List<Seat> seats = seatRepository.findSeatsByIdIn(reservation.seatIds());
 
         boolean hasUnavailableSeats = seats.stream()
                 .anyMatch(seat -> seat.getStatus() == SeatStatus.Unavailable);
@@ -58,6 +48,11 @@ public class ReservationService {
                         InformationNotFoundException("Showtime", reservation.showtimeId()));
 
         if(showtime.getStatus() == ShowtimeStatus.Completed) {
+            throw new PastShowtimeException("Can't reserve seats for a past showtime");
+        }
+
+        if(showtime.getDateTime().isBefore(OffsetDateTime.now())) {
+            showtime.setStatus(ShowtimeStatus.Completed);
             throw new PastShowtimeException("Can't reserve seats for a past showtime");
         }
 
@@ -85,7 +80,7 @@ public class ReservationService {
 
         Reservation savedReservation = reservationRepository.save(newReservation);
 
-        return toDto(savedReservation);
+        return toReturnDto(savedReservation);
     }
 
     public ReservationReturnDto confirmReservation(Long reservationId) {
@@ -98,14 +93,20 @@ public class ReservationService {
             throw new PastShowtimeException("Can't confirm reservation for a past showtime");
         }
 
+        if(reservation.getShowtime().getDateTime().isBefore(OffsetDateTime.now())) {
+            Showtime showtime = reservation.getShowtime();
+            showtime.setStatus(ShowtimeStatus.Completed);
+            throw new PastShowtimeException("Can't confirm seats for a past showtime");
+        }
+
         reservation.setStatus(ReservationStatus.Confirmed);
         Reservation savedReservation = reservationRepository.save(reservation);
-        return toDto(savedReservation);
+        return toReturnDto(savedReservation);
     }
 
-    public ReservationReturnDto updateReservation(Long id, ReservationUpdateDto reservation) {
-        Reservation oldReservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", id));
+    public ReservationReturnDto updateReservation(Long reservationId, ReservationUpdateDto reservation) {
+        Reservation oldReservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
 
         if (oldReservation.getStatus() == ReservationStatus.Cancelled ||
                 oldReservation.getStatus() == ReservationStatus.Failed) {
@@ -133,40 +134,40 @@ public class ReservationService {
             }
         }
         Reservation savedReservation = reservationRepository.save(oldReservation);
-        return toDto(savedReservation);
+        return toReturnDto(savedReservation);
     }
 
-    public void deleteReservation(Long id) {
-        Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", id));
+    public void deleteReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
         reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(reservation.getSeats());
-        reservationRepository.deleteById(id);
+        reservationRepository.deleteById(reservationId);
     }
 
-    public ReservationReturnDto findReservationById(Long id) {
-        Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", id));
-        return toDto(reservation);
+    public ReservationReturnDto findReservationById(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
+        return toReturnDto(reservation);
     }
 
     public List<ReservationReturnDto> findAllReservations() {
         return reservationRepository.findAll()
                 .stream()
-                .map(this :: toDto)
+                .map(this :: toReturnDto)
                 .toList();
     }
 
-    public List<ReservationReturnDto> getAllReservationsForUser(Long userId) {
+    public List<ReservationReturnDto> findAllReservationsForUser(Long userId) {
         return reservationRepository.findByUser_Id(userId)
                 .stream()
-                .map(this :: toDto)
+                .map(this :: toReturnDto)
                 .toList();
     }
 
-    public ReservationReturnDto cancelReservation(Long id) {
-        Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", id));
+    public ReservationReturnDto cancelReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
 
         if (reservation.getStatus() == ReservationStatus.Cancelled ||
                 reservation.getStatus() == ReservationStatus.Failed) {
@@ -178,12 +179,18 @@ public class ReservationService {
             throw new PastShowtimeException("Can't cancel a reservation for a past showtime");
         }
 
+        if(reservation.getShowtime().getDateTime().isBefore(OffsetDateTime.now())) {
+            Showtime showtime = reservation.getShowtime();
+            showtime.setStatus(ShowtimeStatus.Completed);
+            throw new PastShowtimeException("Can't cancel a reservation for a past showtime");
+        }
+
         reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(reservation.getSeats());
 
         reservation.setStatus(ReservationStatus.Cancelled);
         Reservation savedReservation = reservationRepository.save(reservation);
-        return toDto(savedReservation);
+        return toReturnDto(savedReservation);
     }
 
     public Float getTotalRevenue() {
@@ -195,5 +202,25 @@ public class ReservationService {
 
     public Long getReservationCountForMovie(Long movieId) {
         return reservationRepository.countByShowtime_Movie_Id(movieId);
+    }
+
+    public Float getRevenueForShowtime(Long showtimeId) {
+        return reservationRepository.findAll().stream()
+                .filter(r -> r.getStatus() == ReservationStatus.Confirmed)
+                .filter(r -> r.getShowtime().getId().equals(showtimeId))
+                .map(Reservation::getGeneralPrice)
+                .reduce(0f, Float::sum);
+    }
+
+    private ReservationReturnDto toReturnDto(Reservation reservation) {
+        return new ReservationReturnDto(
+                reservation.getId(),
+                reservation.getGeneralPrice(),
+                reservation.getStatus(),
+                reservation.getTimeStamp(),
+                reservation.getUser().getId(),
+                reservation.getSeats().stream().map(Seat :: getId).toList(),
+                reservation.getShowtime().getId()
+        );
     }
 }

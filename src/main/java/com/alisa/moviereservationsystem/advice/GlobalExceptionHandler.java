@@ -59,4 +59,18 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST
         );
     }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> incorrectPassword(IncorrectPasswordException e) {
+        return new ResponseEntity<>(
+                new ErrorResponse(e.getMessage(), 400, Instant.now()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> unauthorizedUser(UnauthorizedUserException e) {
+        return new ResponseEntity<>(
+                new ErrorResponse(e.getMessage(), 403, Instant.now()),
+                HttpStatus.FORBIDDEN);
+    }
 }

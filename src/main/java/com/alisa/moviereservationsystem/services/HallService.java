@@ -21,14 +21,6 @@ public class HallService {
     private final HallRepository hallRepository;
     private final SeatRepository seatRepository;
 
-    private HallReturnDto toDto(Hall hall) {
-        return new HallReturnDto(
-                hall.getId(),
-                hall.getHallNumber(),
-                hall.getSeats().stream().map(Seat :: getId).toList()
-        );
-    }
-
     public HallReturnDto createHall(HallCreateDto hall) {
         Hall newHall = new Hall();
         newHall.setHallNumber(hall.hallNumber());
@@ -37,12 +29,12 @@ public class HallService {
 
         Hall savedHall = hallRepository.save(newHall);
 
-        return toDto(savedHall);
+        return toReturnDto(savedHall);
     }
 
-    public HallReturnDto updateHall(Long id, HallUpdateDto hall) {
-        Hall oldHall = hallRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Hall", id));
+    public HallReturnDto updateHall(Long hallId, HallUpdateDto hall) {
+        Hall oldHall = hallRepository.findById(hallId)
+                .orElseThrow(() -> new InformationNotFoundException("Hall", hallId));
         if(hall == null) {
             throw new InformationIsNullException("Hall information is null");
         } else {
@@ -51,23 +43,31 @@ public class HallService {
             }
         }
         Hall savedHall = hallRepository.save(oldHall);
-        return toDto(savedHall);
+        return toReturnDto(savedHall);
     }
 
-    public void deleteHall(Long id) {
-        hallRepository.deleteById(id);
+    public void deleteHall(Long hallId) {
+        hallRepository.deleteById(hallId);
     }
 
-    public HallReturnDto findHallById(Long id) {
-        Hall hall = hallRepository.findById(id).orElseThrow(() ->
-                new InformationNotFoundException("Hall", id));
-        return toDto(hall);
+    public HallReturnDto findHallById(Long hallId) {
+        Hall hall = hallRepository.findById(hallId).orElseThrow(() ->
+                new InformationNotFoundException("Hall", hallId));
+        return toReturnDto(hall);
     }
 
     public List<HallReturnDto> findAllHalls() {
         return hallRepository.findAll()
                 .stream().
-                map(this::toDto)
+                map(this::toReturnDto)
                 .toList();
+    }
+
+    private HallReturnDto toReturnDto(Hall hall) {
+        return new HallReturnDto(
+                hall.getId(),
+                hall.getHallNumber(),
+                hall.getSeats().stream().map(Seat :: getId).toList()
+        );
     }
 }

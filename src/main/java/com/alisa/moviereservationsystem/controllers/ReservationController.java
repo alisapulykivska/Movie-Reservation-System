@@ -30,7 +30,7 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.updateReservation(id, reservation));
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public void deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
@@ -41,15 +41,15 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.findReservationById(id));
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<ReservationReturnDto>> findAllReservations() {
         return ResponseEntity.ok(reservationService.findAllReservations());
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ReservationReturnDto>> retrieveAllReservationsByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(reservationService.getAllReservationsForUser(userId));
+    public ResponseEntity<List<ReservationReturnDto>> findAllReservationsByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(reservationService.findAllReservationsForUser(userId));
     }
 
     @PatchMapping("/{id}/confirm")
@@ -62,15 +62,20 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/revenue")
     public ResponseEntity<Float> getTotalRevenue() {
         return ResponseEntity.ok(reservationService.getTotalRevenue());
     }
 
-    @PreAuthorize("('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/movie/{movieId}")
     public ResponseEntity<Long> getReservationCountForMovie(@PathVariable Long movieId) {
         return ResponseEntity.ok(reservationService.getReservationCountForMovie(movieId));
+    }
+
+    @GetMapping("/revenue/{showtimeId}")
+    public ResponseEntity<Float> getRevenueForShowtime(@PathVariable Long showtimeId) {
+        return ResponseEntity.ok(reservationService.getRevenueForShowtime(showtimeId));
     }
 }
