@@ -4,24 +4,32 @@ import com.alisa.moviereservationsystem.dto.errorDto.ErrorResponse;
 import com.alisa.moviereservationsystem.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler
-    public ResponseEntity<ErrorResponse> bookedHall(BookedHallException e) {
-        return new ResponseEntity<>(
-                new ErrorResponse(e.getMessage(), 400, Instant.now()),
-                HttpStatus.BAD_REQUEST
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(
+            MethodArgumentNotValidException ex) {
+
+        Map<String, String> errors = new HashMap<>();
+
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage())
         );
+
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler
-    public ResponseEntity<ErrorResponse> informationIsNull(InformationIsNullException e) {
+    public ResponseEntity<ErrorResponse> bookedHall(BookedHallException e) {
         return new ResponseEntity<>(
                 new ErrorResponse(e.getMessage(), 400, Instant.now()),
                 HttpStatus.BAD_REQUEST
@@ -72,5 +80,21 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new ErrorResponse(e.getMessage(), 403, Instant.now()),
                 HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> wrongHall(WrongHallException e) {
+        return new ResponseEntity<>(
+                new ErrorResponse(e.getMessage(), 400, Instant.now()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> duplicateInformation(DuplicateInformationException e) {
+        return new ResponseEntity<>(
+                new ErrorResponse(e.getMessage(), 409, Instant.now()),
+                HttpStatus.CONFLICT
+        );
     }
 }

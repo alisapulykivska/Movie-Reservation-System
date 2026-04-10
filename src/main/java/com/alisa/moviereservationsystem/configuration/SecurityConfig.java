@@ -42,21 +42,20 @@ public class SecurityConfig {
                 .csrf(customizer -> customizer.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers
-                                ("/", "/register", "/login/**").permitAll()
+                                ("/", "/user/register", "/user/login/**").permitAll()
                         .anyRequest().authenticated()
                 )
-//                .oauth2Login(oauth2 -> oauth2
-//                        .successHandler
-//                                ((request, response, authentication) -> {
-//                            String username = authentication.getName();
-//                            String token = jwtService.generateToken(username, jwtService.extractUserId(username));
-//                            response.setHeader("Authorization", "Bearer " + token);
-//                            response.sendRedirect("/");
-//                        }))
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler
+                                ((request, response, authentication) -> {
+                            String username = authentication.getName();
+                            String token = jwtService.generateToken(username, jwtService.extractUserId(username));
+                            response.setHeader("Authorization", "Bearer " + token);
+                            response.sendRedirect("/");
+                        }))
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

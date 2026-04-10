@@ -5,6 +5,7 @@ import com.alisa.moviereservationsystem.dto.returnDto.MovieReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.MovieUpdateDto;
 import com.alisa.moviereservationsystem.models.enums.MovieGenre;
 import com.alisa.moviereservationsystem.services.MovieService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.FutureOrPresent;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,13 +23,13 @@ public class MovieController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<MovieReturnDto> createMovie(@RequestBody MovieCreateDto movie) {
+    public ResponseEntity<MovieReturnDto> createMovie(@Valid @RequestBody MovieCreateDto movie) {
         return ResponseEntity.ok(movieService.createMovie(movie));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<MovieReturnDto> updateMovie(@PathVariable Long id, @RequestBody MovieUpdateDto movie) {
+    public ResponseEntity<MovieReturnDto> updateMovie(@PathVariable Long id, @Valid @RequestBody MovieUpdateDto movie) {
         return ResponseEntity.ok(movieService.updateMovie(id, movie));
     }
 

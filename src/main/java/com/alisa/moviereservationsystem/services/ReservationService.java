@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -36,16 +37,13 @@ public class ReservationService {
     public ReservationReturnDto createReservation(ReservationCreateDto reservation) {
         List<Seat> seats = seatRepository.findSeatsByIdIn(reservation.seatIds());
 
-        boolean hasUnavailableSeats = seats.stream()
-                .anyMatch(seat -> seat.getStatus() == SeatStatus.Unavailable);
-
-        if(hasUnavailableSeats){
-            throw new SeatsUnavailableException("One or more seats are unavailable");
+        if (seats.size() != reservation.seatIds().size()) {
+            throw new IllegalArgumentException("Seats information cannot be null");
         }
 
         Showtime showtime = showtimeRepository.
                 findById(reservation.showtimeId()).orElseThrow(() -> new
-                        InformationNotFoundException("Showtime", reservation.showtimeId()));
+                        InformationNotFoundException("Showtime not found"));
 
         if(showtime.getStatus() == ShowtimeStatus.Completed) {
             throw new PastShowtimeException("Can't reserve seats for a past showtime");
@@ -54,6 +52,20 @@ public class ReservationService {
         if(showtime.getDateTime().isBefore(OffsetDateTime.now())) {
             showtime.setStatus(ShowtimeStatus.Completed);
             throw new PastShowtimeException("Can't reserve seats for a past showtime");
+        }
+
+        boolean seatsFromWrongHall = seats.stream()
+                .anyMatch(seat -> !seat.getHall().getId().equals(showtime.getHall().getId()));
+
+        if(seatsFromWrongHall) {
+            throw new WrongHallException("Can't reserve seats for a wrong hall");
+        }
+
+        boolean hasUnavailableSeats = seats.stream()
+                .anyMatch(seat -> seat.getStatus() != SeatStatus.Available);
+
+        if(hasUnavailableSeats) {
+            throw new SeatsUnavailableException("One or more seats are unavailable");
         }
 
         Float multiplier = switch(showtime.getShowtimeType()) {
@@ -69,13 +81,13 @@ public class ReservationService {
         Reservation newReservation = new Reservation();
 
         CustomUser user = customUserRepository.findById(reservation.userId()).
-                orElseThrow(() -> new InformationNotFoundException("CustomUser", reservation.userId()));
+                orElseThrow(() -> new InformationNotFoundException("User not found"));
         newReservation.setUser(user);
         newReservation.setGeneralPrice(generalPrice);
-        newReservation.setSeats(seats);
         newReservation.setShowtime(showtime);
-        seats.forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
+        seats.forEach(seat -> seat.setStatus(SeatStatus.Held));
         seatRepository.saveAll(seats);
+        newReservation.setSeats(seats);
         newReservation.setStatus(ReservationStatus.Pending);
 
         Reservation savedReservation = reservationRepository.save(newReservation);
@@ -85,7 +97,7 @@ public class ReservationService {
 
     public ReservationReturnDto confirmReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         if (reservation.getStatus() != ReservationStatus.Pending) {
             throw new InvalidReservationStatusException("Only pending reservations can be confirmed");
         }
@@ -100,13 +112,14 @@ public class ReservationService {
         }
 
         reservation.setStatus(ReservationStatus.Confirmed);
+        reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
         Reservation savedReservation = reservationRepository.save(reservation);
         return toReturnDto(savedReservation);
     }
 
     public ReservationReturnDto updateReservation(Long reservationId, ReservationUpdateDto reservation) {
         Reservation oldReservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
         if (oldReservation.getStatus() == ReservationStatus.Cancelled ||
                 oldReservation.getStatus() == ReservationStatus.Failed) {
@@ -114,16 +127,12 @@ public class ReservationService {
                     ("Cannot update a cancelled or failed reservation");
         }
 
-        if(reservation == null) {
-            throw new InformationIsNullException("Reservation information is null");
-        } else {
-            if(reservation.seatIds() != null) {
                 oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
                 seatRepository.saveAll(oldReservation.getSeats());
 
                 List<Seat> newSeats = seatRepository.findAllById(reservation.seatIds());
                 boolean hasUnavailableSeats = newSeats.stream()
-                        .anyMatch(seat -> seat.getStatus() == SeatStatus.Unavailable);
+                        .anyMatch(seat -> seat.getStatus() != SeatStatus.Available);
                 if(hasUnavailableSeats){
                     throw new SeatsUnavailableException("One or more seats are unavailable");
                 }
@@ -131,15 +140,14 @@ public class ReservationService {
                 oldReservation.setSeats(newSeats);
                 newSeats.forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
                 seatRepository.saveAll(newSeats);
-            }
-        }
+
         Reservation savedReservation = reservationRepository.save(oldReservation);
         return toReturnDto(savedReservation);
     }
 
     public void deleteReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(reservation.getSeats());
         reservationRepository.deleteById(reservationId);
@@ -147,7 +155,7 @@ public class ReservationService {
 
     public ReservationReturnDto findReservationById(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         return toReturnDto(reservation);
     }
 
@@ -167,7 +175,7 @@ public class ReservationService {
 
     public ReservationReturnDto cancelReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new InformationNotFoundException("Reservation", reservationId));
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
         if (reservation.getStatus() == ReservationStatus.Cancelled ||
                 reservation.getStatus() == ReservationStatus.Failed) {

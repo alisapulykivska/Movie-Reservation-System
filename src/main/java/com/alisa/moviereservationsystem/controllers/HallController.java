@@ -4,6 +4,7 @@ import com.alisa.moviereservationsystem.dto.createDto.HallCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.HallReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.HallUpdateDto;
 import com.alisa.moviereservationsystem.services.HallService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,13 +21,13 @@ public class HallController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<HallReturnDto> createHall(@RequestBody HallCreateDto hall) {
+    public ResponseEntity<HallReturnDto> createHall(@Valid @RequestBody HallCreateDto hall) {
         return ResponseEntity.ok(hallService.createHall(hall));
     }
 
     @PreAuthorize("hasRole('Admin')")
     @PutMapping("/{id}")
-    public ResponseEntity<HallReturnDto> updateHall(@PathVariable Long id, @RequestBody HallUpdateDto hall) {
+    public ResponseEntity<HallReturnDto> updateHall(@PathVariable Long id, @Valid @RequestBody HallUpdateDto hall) {
         return ResponseEntity.ok(hallService.updateHall(id, hall));
     }
 

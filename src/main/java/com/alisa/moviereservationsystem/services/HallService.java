@@ -3,7 +3,6 @@ package com.alisa.moviereservationsystem.services;
 import com.alisa.moviereservationsystem.dto.createDto.HallCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.HallReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.HallUpdateDto;
-import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
 import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.Hall;
 import com.alisa.moviereservationsystem.models.Seat;
@@ -34,14 +33,10 @@ public class HallService {
 
     public HallReturnDto updateHall(Long hallId, HallUpdateDto hall) {
         Hall oldHall = hallRepository.findById(hallId)
-                .orElseThrow(() -> new InformationNotFoundException("Hall", hallId));
-        if(hall == null) {
-            throw new InformationIsNullException("Hall information is null");
-        } else {
-            if(hall.hallNumber() != null) {
+                .orElseThrow(() -> new InformationNotFoundException("Hall not found"));
+
                 oldHall.setHallNumber(hall.hallNumber());
-            }
-        }
+
         Hall savedHall = hallRepository.save(oldHall);
         return toReturnDto(savedHall);
     }
@@ -52,7 +47,7 @@ public class HallService {
 
     public HallReturnDto findHallById(Long hallId) {
         Hall hall = hallRepository.findById(hallId).orElseThrow(() ->
-                new InformationNotFoundException("Hall", hallId));
+                new InformationNotFoundException("Hall not found"));
         return toReturnDto(hall);
     }
 

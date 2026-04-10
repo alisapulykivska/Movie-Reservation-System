@@ -3,7 +3,6 @@ package com.alisa.moviereservationsystem.services;
 import com.alisa.moviereservationsystem.dto.createDto.MovieCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.MovieReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.MovieUpdateDto;
-import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
 import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.Movie;
 import com.alisa.moviereservationsystem.models.enums.MovieGenre;
@@ -32,23 +31,12 @@ public class MovieService {
 
     public MovieReturnDto updateMovie(Long movieId, MovieUpdateDto movie) {
         Movie oldMovie = movieRepository.findById(movieId)
-                .orElseThrow(() -> new InformationNotFoundException("Movie", movieId));
-        if(movie == null) {
-            throw new InformationIsNullException("Movie information is null");
-        } else {
-            if(movie.title() != null && !movie.title().isEmpty()) {
+                .orElseThrow(() -> new InformationNotFoundException("Movie not found"));
+
                 oldMovie.setTitle(movie.title());
-            }
-            if(movie.description() != null && !movie.description().isEmpty()) {
                 oldMovie.setDescription(movie.description());
-            }
-            if(movie.posterUrl() != null && !movie.posterUrl().isEmpty()) {
                 oldMovie.setPosterUrl(movie.posterUrl());
-            }
-            if(movie.genres() != null && !movie.genres().isEmpty()) {
                 oldMovie.setGenres(movie.genres());
-            }
-        }
 
         Movie savedMovie = movieRepository.save(oldMovie);
         return toReturnDto(savedMovie);
@@ -60,7 +48,7 @@ public class MovieService {
 
     public MovieReturnDto findMovieById(Long id) {
         Movie movie = movieRepository.findById(id).orElseThrow(() -> new
-                InformationNotFoundException("Movie", id));
+                InformationNotFoundException("Movie not found"));
         return toReturnDto(movie);
     }
 

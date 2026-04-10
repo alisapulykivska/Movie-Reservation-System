@@ -5,8 +5,10 @@ import com.alisa.moviereservationsystem.dto.securityDto.LoginUserDto;
 import com.alisa.moviereservationsystem.dto.securityDto.RegisterUserDto;
 import com.alisa.moviereservationsystem.dto.createDto.CustomUserCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.CustomUserReturnDto;
+import com.alisa.moviereservationsystem.dto.securityDto.ResetPasswordDto;
 import com.alisa.moviereservationsystem.dto.updateDto.CustomUserUpdateDto;
 import com.alisa.moviereservationsystem.services.CustomUserService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,12 +25,12 @@ public class CustomUserController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<CustomUserReturnDto> createUser(@RequestBody CustomUserCreateDto user) {
+    public ResponseEntity<CustomUserReturnDto> createUser(@Valid @RequestBody CustomUserCreateDto user) {
         return ResponseEntity.ok(customUserService.createUser(user));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomUserReturnDto> updateUser(@PathVariable Long id, @RequestBody CustomUserUpdateDto user) {
+    public ResponseEntity<CustomUserReturnDto> updateUser(@PathVariable Long id, @Valid @RequestBody CustomUserUpdateDto user) {
         return ResponseEntity.ok(customUserService.updateUser(id, user));
     }
 
@@ -55,23 +57,23 @@ public class CustomUserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<CustomUserReturnDto> registerUser(@RequestBody RegisterUserDto registerUserDto) {
+    public ResponseEntity<CustomUserReturnDto> registerUser(@Valid @RequestBody RegisterUserDto registerUserDto) {
         return ResponseEntity.ok(customUserService.register(registerUserDto));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> userLogin(@RequestBody LoginUserDto loginUserDto) {
+    public ResponseEntity<String> userLogin(@Valid @RequestBody LoginUserDto loginUserDto) {
         return ResponseEntity.ok(customUserService.login(loginUserDto));
     }
 
     @PatchMapping("/{id}/change-password")
-    public ResponseEntity<CustomUserReturnDto> changePassword(@PathVariable Long id, @RequestBody ChangePasswordDto dto) {
-        return ResponseEntity.ok(customUserService.changePassword(id, dto));
+    public ResponseEntity<CustomUserReturnDto> changePassword(@PathVariable Long id, @Valid @RequestBody ChangePasswordDto changePasswordDto) {
+        return ResponseEntity.ok(customUserService.changePassword(id, changePasswordDto));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/reset-password")
-    public ResponseEntity<CustomUserReturnDto> resetPassword(@PathVariable Long id, @RequestBody String newPassword) {
-        return ResponseEntity.ok(customUserService.resetPassword(id, newPassword));
+    public ResponseEntity<CustomUserReturnDto> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetPasswordDto resetPasswordDto) {
+        return ResponseEntity.ok(customUserService.resetPassword(id, resetPasswordDto));
     }
 }
