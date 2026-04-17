@@ -5,9 +5,10 @@ import com.alisa.moviereservationsystem.dto.securityDto.LoginUserDto;
 import com.alisa.moviereservationsystem.dto.securityDto.RegisterUserDto;
 import com.alisa.moviereservationsystem.dto.createDto.CustomUserCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.CustomUserReturnDto;
+import com.alisa.moviereservationsystem.dto.securityDto.ResetPasswordDto;
 import com.alisa.moviereservationsystem.dto.updateDto.CustomUserUpdateDto;
+import com.alisa.moviereservationsystem.exceptions.DuplicateInformationException;
 import com.alisa.moviereservationsystem.exceptions.IncorrectPasswordException;
-import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
 import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.exceptions.UnauthorizedUserException;
 import com.alisa.moviereservationsystem.models.CustomUser;
@@ -54,17 +55,11 @@ public class CustomUserService {
         }
 
         CustomUser oldUser = customUserRepository.findById(userId)
-                .orElseThrow(() -> new InformationNotFoundException("CustomUser", userId));
-        if(user == null) {
-            throw new InformationIsNullException("User information is null");
-        } else {
-            if(user.username() != null && !user.username().isEmpty()){
+                .orElseThrow(() -> new InformationNotFoundException("User not found"));
+
                 oldUser.setUsername(user.username());
-            }
-            if(user.email() != null && !user.email().isEmpty()) {
                 oldUser.setEmail(user.email());
-            }
-        }
+
         CustomUser savedUser = customUserRepository.save(oldUser);
         return toReturnDto(savedUser);
     }
@@ -80,7 +75,7 @@ public class CustomUserService {
 
     public CustomUserReturnDto findUserById(Long userId) {
         CustomUser user = customUserRepository.findById(userId).orElseThrow(() ->
-                new InformationNotFoundException("CustomUser", userId));
+                new InformationNotFoundException("User not found"));
         return toReturnDto(user);
     }
 
@@ -93,12 +88,21 @@ public class CustomUserService {
 
     public CustomUserReturnDto promoteToAdmin(Long userId) {
         CustomUser customUser =  customUserRepository.findById(userId)
-                .orElseThrow(() -> new InformationNotFoundException("CustomUser", userId));
+                .orElseThrow(() -> new InformationNotFoundException("User not found"));
         customUser.setUserRole(UserRole.ADMIN);
         return toReturnDto(customUserRepository.save(customUser));
     }
 
     public CustomUserReturnDto register(RegisterUserDto user) {
+
+        if(customUserRepository.findByUsername(user.username()).isPresent()) {
+            throw new DuplicateInformationException("Username is already in use");
+        }
+
+        if(customUserRepository.findByEmail(user.email()).isPresent()) {
+            throw new DuplicateInformationException("Email is already in use");
+        }
+
         CustomUser customUser = new CustomUser();
         customUser.setUsername(user.username());
         customUser.setEmail(user.email());
@@ -115,10 +119,10 @@ public class CustomUserService {
 
         if(authentication.isAuthenticated()) {
             CustomUser customUser = customUserRepository.findByUsername(user.username())
-                    .orElseThrow(() -> new InformationNotFoundException("User", 0L));
+                    .orElseThrow(() -> new InformationNotFoundException("User not found"));
             return jwtService.generateToken(customUser.getUsername(), customUser.getId());
         }
-        return "Login failed";
+        return "Invalid username or password";
     }
 
     public CustomUserReturnDto changePassword(Long userId, ChangePasswordDto dto) {
@@ -128,20 +132,28 @@ public class CustomUserService {
             throw new UnauthorizedUserException("You can only change your own password");
         }
         CustomUser user = customUserRepository.findById(userId)
-                .orElseThrow(() -> new InformationNotFoundException("CustomUser", userId));
+                .orElseThrow(() -> new InformationNotFoundException("User not found"));
 
         if(!passwordEncoder.matches(dto.oldPassword(), user.getPassword())) {
             throw new IncorrectPasswordException("Old password is incorrect");
+        }
+
+        if(passwordEncoder.matches(dto.newPassword(), user.getPassword())) {
+            throw new IncorrectPasswordException("New password is the same as the old password");
         }
 
         user.setPassword(passwordEncoder.encode(dto.newPassword()));
         return toReturnDto(customUserRepository.save(user));
     }
 
-    public CustomUserReturnDto resetPassword(Long userId, String newPassword) {
+    public CustomUserReturnDto resetPassword(Long userId, ResetPasswordDto resetPasswordDto) {
         CustomUser user = customUserRepository.findById(userId)
-                .orElseThrow(() -> new InformationNotFoundException("CustomUser", userId));
-        user.setPassword(passwordEncoder.encode(newPassword));
+                .orElseThrow(() -> new InformationNotFoundException("User not found"));
+        if(!resetPasswordDto.newPassword().equals(resetPasswordDto.confirmPassword())) {
+            throw new IncorrectPasswordException("Passwords do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(resetPasswordDto.newPassword()));
         return toReturnDto(customUserRepository.save(user));
     }
 
@@ -149,7 +161,7 @@ public class CustomUserService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         CustomUser user = customUserRepository.findByUsername(username)
-                .orElseThrow(() -> new InformationNotFoundException("User", 0L));
+                .orElseThrow(() -> new InformationNotFoundException("User not found"));
         return user.getId();
     }
 

@@ -4,6 +4,7 @@ import com.alisa.moviereservationsystem.dto.createDto.SeatCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.SeatReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.SeatUpdateDto;
 import com.alisa.moviereservationsystem.services.SeatService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,13 +21,13 @@ public class SeatController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<SeatReturnDto> createSeat(@RequestBody SeatCreateDto seat) {
+    public ResponseEntity<SeatReturnDto> createSeat(@Valid @RequestBody SeatCreateDto seat) {
         return ResponseEntity.ok(seatService.createSeat(seat));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<SeatReturnDto> updateSeat(@PathVariable Long id, @RequestBody SeatUpdateDto seat) {
+    public ResponseEntity<SeatReturnDto> updateSeat(@PathVariable Long id, @Valid @RequestBody SeatUpdateDto seat) {
         return ResponseEntity.ok(seatService.updateSeat(id, seat));
     }
 

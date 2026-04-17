@@ -4,6 +4,7 @@ import com.alisa.moviereservationsystem.dto.createDto.ShowtimeCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.ShowtimeReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.ShowtimeUpdateDto;
 import com.alisa.moviereservationsystem.services.ShowtimeService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,13 +22,13 @@ public class ShowtimeController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ShowtimeReturnDto> createShowtime(@RequestBody ShowtimeCreateDto showtime) {
+    public ResponseEntity<ShowtimeReturnDto> createShowtime(@Valid @RequestBody ShowtimeCreateDto showtime) {
         return ResponseEntity.ok(showtimeService.createShowtime(showtime));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ShowtimeReturnDto> updateShowtime(@PathVariable Long id, @RequestBody ShowtimeUpdateDto showtime) {
+    public ResponseEntity<ShowtimeReturnDto> updateShowtime(@PathVariable Long id, @Valid @RequestBody ShowtimeUpdateDto showtime) {
         return ResponseEntity.ok(showtimeService.updateShowtime(id, showtime));
     }
 

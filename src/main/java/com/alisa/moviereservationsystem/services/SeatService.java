@@ -3,11 +3,11 @@ package com.alisa.moviereservationsystem.services;
 import com.alisa.moviereservationsystem.dto.createDto.SeatCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.SeatReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.SeatUpdateDto;
-import com.alisa.moviereservationsystem.exceptions.InformationIsNullException;
 import com.alisa.moviereservationsystem.exceptions.InformationNotFoundException;
 import com.alisa.moviereservationsystem.models.Hall;
 import com.alisa.moviereservationsystem.models.Seat;
 import com.alisa.moviereservationsystem.models.Showtime;
+import com.alisa.moviereservationsystem.models.enums.SeatStatus;
 import com.alisa.moviereservationsystem.repositories.HallRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import com.alisa.moviereservationsystem.repositories.ShowtimeRepository;
@@ -30,9 +30,9 @@ public class SeatService {
         newSeat.setRowNumber(seat.rowNumber());
         newSeat.setPrice(seat.price());
         newSeat.setType(seat.type());
-        newSeat.setStatus(seat.status());
+        newSeat.setStatus(SeatStatus.Available);
         Hall hall = hallRepository.findById(seat.hallId())
-                .orElseThrow(() -> new InformationNotFoundException("Hall", seat.hallId()));
+                .orElseThrow(() -> new InformationNotFoundException("Hall not found"));
         newSeat.setHall(hall);
 
         Seat savedSeat = seatRepository.save(newSeat);
@@ -42,20 +42,12 @@ public class SeatService {
 
     public SeatReturnDto updateSeat(Long seatId, SeatUpdateDto seat) {
         Seat oldSeat = seatRepository.findById(seatId)
-                .orElseThrow(() -> new InformationNotFoundException("Seat", seatId));
-        if(seat == null) {
-            throw new InformationIsNullException("Seat information is null");
-        } else {
-            if(seat.seatNumber() != null) {
+                .orElseThrow(() -> new InformationNotFoundException("Seat not found"));
+
                 oldSeat.setSeatNumber(seat.seatNumber());
-            }
-            if(seat.rowNumber() != null) {
                 oldSeat.setRowNumber(seat.rowNumber());
-            }
-            if(seat.price() != null) {
                 oldSeat.setPrice(seat.price());
-            }
-        }
+
         Seat savedSeat = seatRepository.save(oldSeat);
         return toReturnDto(savedSeat);
     }
@@ -66,7 +58,7 @@ public class SeatService {
 
     public SeatReturnDto findSeatById(Long id) {
         Seat seat = seatRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Seat", id));
+                .orElseThrow(() -> new InformationNotFoundException("Seat not found"));
         return toReturnDto(seat);
     }
 
@@ -79,7 +71,7 @@ public class SeatService {
 
     public List<SeatReturnDto> getAllSeatsForShowtime(Long showtimeId) {
         Showtime showtime = showtimeRepository.findById(showtimeId)
-                .orElseThrow(() -> new InformationNotFoundException("Showtime", showtimeId));
+                .orElseThrow(() -> new InformationNotFoundException("Showtime not found"));
         return showtime.getHall().getSeats()
                 .stream()
                 .map(this::toReturnDto)
