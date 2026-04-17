@@ -37,10 +37,6 @@ public class ReservationService {
     public ReservationReturnDto createReservation(ReservationCreateDto reservation) {
         List<Seat> seats = seatRepository.findSeatsByIdIn(reservation.seatIds());
 
-        if (seats.size() != reservation.seatIds().size()) {
-            throw new IllegalArgumentException("Seats information cannot be null");
-        }
-
         Showtime showtime = showtimeRepository.
                 findById(reservation.showtimeId()).orElseThrow(() -> new
                         InformationNotFoundException("Showtime not found"));
@@ -127,19 +123,26 @@ public class ReservationService {
                     ("Cannot update a cancelled or failed reservation");
         }
 
-                oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
-                seatRepository.saveAll(oldReservation.getSeats());
+        List<Seat> newSeats = seatRepository.findAllById(reservation.seatIds());
 
-                List<Seat> newSeats = seatRepository.findAllById(reservation.seatIds());
-                boolean hasUnavailableSeats = newSeats.stream()
-                        .anyMatch(seat -> seat.getStatus() != SeatStatus.Available);
-                if(hasUnavailableSeats){
-                    throw new SeatsUnavailableException("One or more seats are unavailable");
-                }
+        boolean seatsFromWrongHall = newSeats.stream()
+                .anyMatch(seat -> !seat.getHall().getId().equals(oldReservation.getShowtime().getHall().getId()));
+        if (seatsFromWrongHall) {
+            throw new WrongHallException("Can't reserve seats for a wrong hall");
+        }
 
-                oldReservation.setSeats(newSeats);
-                newSeats.forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
-                seatRepository.saveAll(newSeats);
+        boolean hasUnavailableSeats = newSeats.stream()
+                .anyMatch(seat -> seat.getStatus() != SeatStatus.Available);
+        if(hasUnavailableSeats){
+            throw new SeatsUnavailableException("One or more seats are unavailable");
+        }
+
+        oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+        seatRepository.saveAll(oldReservation.getSeats());
+
+        oldReservation.setSeats(newSeats);
+        newSeats.forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
+        seatRepository.saveAll(newSeats);
 
         Reservation savedReservation = reservationRepository.save(oldReservation);
         return toReturnDto(savedReservation);

@@ -1,6 +1,7 @@
 package com.alisa.moviereservationsystem.advice;
 
 import com.alisa.moviereservationsystem.dto.errorDto.ErrorResponse;
+import com.alisa.moviereservationsystem.dto.errorDto.ValidationError;
 import com.alisa.moviereservationsystem.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(
+    public ResponseEntity<ValidationError> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new HashMap<>();
@@ -25,7 +26,10 @@ public class GlobalExceptionHandler {
                 errors.put(error.getField(), error.getDefaultMessage())
         );
 
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(
+                new ValidationError(errors),
+                HttpStatus.BAD_REQUEST
+        );
     }
 
     @ExceptionHandler
