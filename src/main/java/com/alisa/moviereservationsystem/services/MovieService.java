@@ -9,6 +9,8 @@ import com.alisa.moviereservationsystem.models.enums.MovieGenre;
 import com.alisa.moviereservationsystem.models.enums.ShowtimeStatus;
 import com.alisa.moviereservationsystem.repositories.MovieRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +21,7 @@ public class MovieService {
 
     private final MovieRepository movieRepository;
 
+    @CacheEvict(value = "movies", allEntries = true)
     public MovieReturnDto createMovie(MovieCreateDto movie) {
         Movie newMovie = new Movie();
         newMovie.setTitle(movie.title());
@@ -29,6 +32,7 @@ public class MovieService {
         return toReturnDto(savedMovie);
     }
 
+    @CacheEvict(value = "movies", allEntries = true)
     public MovieReturnDto updateMovie(Long movieId, MovieUpdateDto movie) {
         Movie oldMovie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new InformationNotFoundException("Movie not found"));
@@ -42,16 +46,19 @@ public class MovieService {
         return toReturnDto(savedMovie);
     }
 
+    @CacheEvict(value = "movies", allEntries = true)
     public void deleteMovie(Long movieId) {
         movieRepository.deleteById(movieId);
     }
 
-    public MovieReturnDto findMovieById(Long id) {
-        Movie movie = movieRepository.findById(id).orElseThrow(() -> new
+    @Cacheable(value = "movies", key = "#movieId")
+    public MovieReturnDto findMovieById(Long movieId) {
+        Movie movie = movieRepository.findById(movieId).orElseThrow(() -> new
                 InformationNotFoundException("Movie not found"));
         return toReturnDto(movie);
     }
 
+    @Cacheable(value = "movies")
     public List<MovieReturnDto> findAllMovies() {
         return movieRepository.findAll()
                 .stream()
@@ -59,6 +66,7 @@ public class MovieService {
                 .toList();
     }
 
+    @Cacheable(value = "movies", key = "#genres")
     public List<MovieReturnDto> findAllMoviesByGenres(List<MovieGenre> genres) {
         return movieRepository.findAll().stream()
                 .filter(movie -> movie.getGenres()
@@ -77,6 +85,7 @@ public class MovieService {
                 .toList();
     }
 
+    @Cacheable(value = "movies", key = "#title")
     public List<MovieReturnDto> findMoviesByTitle(String title) {
         return movieRepository.findByTitleContainingIgnoreCase(title).stream()
                 .map(this::toReturnDto)
