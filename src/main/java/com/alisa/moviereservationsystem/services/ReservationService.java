@@ -1,7 +1,10 @@
 package com.alisa.moviereservationsystem.services;
 
 import com.alisa.moviereservationsystem.dto.createDto.ReservationCreateDto;
+import com.alisa.moviereservationsystem.dto.paymentDto.PaymentRequestDto;
+import com.alisa.moviereservationsystem.dto.paymentDto.PaymentResponseDto;
 import com.alisa.moviereservationsystem.dto.returnDto.ReservationReturnDto;
+import com.alisa.moviereservationsystem.dto.returnDto.UpdateReservationReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.ReservationUpdateDto;
 import com.alisa.moviereservationsystem.exceptions.*;
 import com.alisa.moviereservationsystem.models.CustomUser;
@@ -32,6 +35,7 @@ public class ReservationService {
     private final CustomUserRepository customUserRepository;
     private final SeatRepository seatRepository;
     private final ShowtimeRepository showtimeRepository;
+    private final PaymentService paymentService;
 
     @Transactional
     public ReservationReturnDto createReservation(ReservationCreateDto reservation) {
@@ -107,13 +111,26 @@ public class ReservationService {
             throw new PastShowtimeException("Can't confirm seats for a past showtime");
         }
 
-        reservation.setStatus(ReservationStatus.Confirmed);
-        reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
-        Reservation savedReservation = reservationRepository.save(reservation);
-        return toReturnDto(savedReservation);
+        PaymentResponseDto paymentResponse = paymentService.processPayment(new PaymentRequestDto(
+                reservationId,
+                reservation.getUser().getId(),
+                reservation.getGeneralPrice())
+        );
+
+        if(paymentResponse.status().equals("SUCCESS")) {
+            reservation.setStatus(ReservationStatus.Confirmed);
+            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
+            seatRepository.saveAll(reservation.getSeats());
+        } else {
+            reservation.setStatus(ReservationStatus.Failed);
+            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+            seatRepository.saveAll(reservation.getSeats());
+        }
+
+        return toReturnDto(reservationRepository.save(reservation));
     }
 
-    public ReservationReturnDto updateReservation(Long reservationId, ReservationUpdateDto reservation) {
+    public UpdateReservationReturnDto updateReservation(Long reservationId, ReservationUpdateDto reservation) {
         Reservation oldReservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
@@ -137,6 +154,18 @@ public class ReservationService {
             throw new SeatsUnavailableException("One or more seats are unavailable");
         }
 
+        Float multiplier = switch(oldReservation.getShowtime().getShowtimeType()) {
+            case Premiere -> 1.5f;
+            case Standard -> 1.0f;
+            case Preview -> 2.0f;
+        };
+
+        Float newPrice = newSeats.stream()
+                        .map(Seat::getPrice)
+                        .reduce(0f, Float::sum) * multiplier;
+
+        Float priceDifference = newPrice - oldReservation.getGeneralPrice();
+
         oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(oldReservation.getSeats());
 
@@ -145,7 +174,57 @@ public class ReservationService {
         seatRepository.saveAll(newSeats);
 
         Reservation savedReservation = reservationRepository.save(oldReservation);
-        return toReturnDto(savedReservation);
+
+        return new UpdateReservationReturnDto(
+                savedReservation.getId(),
+                newPrice,
+                priceDifference,
+                savedReservation.getStatus(),
+                savedReservation.getTimeStamp(),
+                savedReservation.getUser().getId(),
+                savedReservation.getSeats().stream().map(Seat::getId).toList(),
+                savedReservation.getShowtime().getId()
+        );
+    }
+
+    public ReservationReturnDto chargeExtraPayment(Long reservationId, Float priceDifference) throws FailedPaymentException {
+        Reservation reservation =  reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
+        if (reservation.getStatus() != ReservationStatus.Confirmed) {
+            throw new InvalidReservationStatusException("Only confirmed reservations can be charged");
+        }
+
+        PaymentResponseDto paymentResponse = paymentService.processPayment(new PaymentRequestDto(
+                reservationId,
+                reservation.getUser().getId(),
+                priceDifference
+        ));
+
+        if(paymentResponse.status().equals("FAILED")) {
+            throw new FailedPaymentException("Extra payment failed");
+        }
+
+        return toReturnDto(reservation);
+    }
+
+    public ReservationReturnDto refundPriceDifference(Long reservationId, Float priceDifference) throws FailedPaymentException {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
+        if (reservation.getStatus() != ReservationStatus.Confirmed) {
+            throw new InvalidReservationStatusException("Only confirmed reservations can be refunded");
+        }
+
+        PaymentResponseDto refundResponse = paymentService.refundPayment(new PaymentRequestDto(
+                reservationId,
+                reservation.getUser().getId(),
+                priceDifference
+        ));
+
+        if (refundResponse.status().equals("REFUND FAILED")) {
+            throw new FailedPaymentException("Refund failed, please contact support");
+        }
+
+        return toReturnDto(reservation);
     }
 
     public void deleteReservation(Long reservationId) {
@@ -176,7 +255,7 @@ public class ReservationService {
                 .toList();
     }
 
-    public ReservationReturnDto cancelReservation(Long reservationId) {
+    public ReservationReturnDto cancelReservation(Long reservationId) throws FailedPaymentException {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
@@ -196,12 +275,23 @@ public class ReservationService {
             throw new PastShowtimeException("Can't cancel a reservation for a past showtime");
         }
 
+        if(reservation.getStatus() == (ReservationStatus.Confirmed)) {
+            PaymentResponseDto refundResponse = paymentService.refundPayment(new PaymentRequestDto(
+                    reservationId,
+                    reservation.getUser().getId(),
+                    reservation.getGeneralPrice()
+            ));
+
+            if(refundResponse.status().equals("REFUND FAILED")) {
+                throw new FailedPaymentException("Refund failed, please contact support");
+            }
+        }
+
         reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(reservation.getSeats());
 
         reservation.setStatus(ReservationStatus.Cancelled);
-        Reservation savedReservation = reservationRepository.save(reservation);
-        return toReturnDto(savedReservation);
+        return toReturnDto(reservationRepository.save(reservation));
     }
 
     public Float getTotalRevenue() {

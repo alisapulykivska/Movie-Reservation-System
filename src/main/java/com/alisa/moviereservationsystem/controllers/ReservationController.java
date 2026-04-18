@@ -2,7 +2,9 @@ package com.alisa.moviereservationsystem.controllers;
 
 import com.alisa.moviereservationsystem.dto.createDto.ReservationCreateDto;
 import com.alisa.moviereservationsystem.dto.returnDto.ReservationReturnDto;
+import com.alisa.moviereservationsystem.dto.returnDto.UpdateReservationReturnDto;
 import com.alisa.moviereservationsystem.dto.updateDto.ReservationUpdateDto;
+import com.alisa.moviereservationsystem.exceptions.FailedPaymentException;
 import com.alisa.moviereservationsystem.services.ReservationService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -27,7 +29,7 @@ public class ReservationController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ReservationReturnDto> updateReservation(@PathVariable Long id, @Valid @RequestBody ReservationUpdateDto reservation) {
+    public ResponseEntity<UpdateReservationReturnDto> updateReservation(@PathVariable Long id, @Valid @RequestBody ReservationUpdateDto reservation) {
         return ResponseEntity.ok(reservationService.updateReservation(id, reservation));
     }
 
@@ -59,7 +61,7 @@ public class ReservationController {
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ReservationReturnDto> cancelReservation(@PathVariable Long id) {
+    public ResponseEntity<ReservationReturnDto> cancelReservation(@PathVariable Long id) throws FailedPaymentException {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
 
@@ -78,5 +80,17 @@ public class ReservationController {
     @GetMapping("/revenue/{showtimeId}")
     public ResponseEntity<Float> getRevenueForShowtime(@PathVariable Long showtimeId) {
         return ResponseEntity.ok(reservationService.getRevenueForShowtime(showtimeId));
+    }
+
+    @PatchMapping("/charge/{reservationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReservationReturnDto> chargeExtraPayment(@PathVariable Long reservationId, @RequestParam Float priceDifference) throws FailedPaymentException {
+        return ResponseEntity.ok(reservationService.chargeExtraPayment(reservationId, priceDifference));
+    }
+
+    @PatchMapping("/refund/{reservationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ReservationReturnDto> refundPriceDifference(@PathVariable Long reservationId, @RequestParam Float priceDifference) throws FailedPaymentException {
+        return ResponseEntity.ok(reservationService.refundPriceDifference(reservationId, priceDifference));
     }
 }
