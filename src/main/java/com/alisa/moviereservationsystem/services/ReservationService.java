@@ -154,6 +154,8 @@ public class ReservationService {
             throw new SeatsUnavailableException("One or more seats are unavailable");
         }
 
+        Float oldPrice = oldReservation.getGeneralPrice();
+
         Float multiplier = switch(oldReservation.getShowtime().getShowtimeType()) {
             case Premiere -> 1.5f;
             case Standard -> 1.0f;
@@ -164,7 +166,7 @@ public class ReservationService {
                         .map(Seat::getPrice)
                         .reduce(0f, Float::sum) * multiplier;
 
-        Float priceDifference = newPrice - oldReservation.getGeneralPrice();
+        Float priceDifference = newPrice - oldPrice;
 
         oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(oldReservation.getSeats());
@@ -178,6 +180,7 @@ public class ReservationService {
         return new UpdateReservationReturnDto(
                 savedReservation.getId(),
                 newPrice,
+                oldPrice,
                 priceDifference,
                 savedReservation.getStatus(),
                 savedReservation.getTimeStamp(),
