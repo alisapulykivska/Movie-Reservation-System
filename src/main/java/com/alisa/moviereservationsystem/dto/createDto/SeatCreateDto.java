@@ -4,6 +4,8 @@ import com.alisa.moviereservationsystem.models.enums.SeatStatus;
 import com.alisa.moviereservationsystem.models.enums.SeatType;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
+
 public record SeatCreateDto(
         @NotNull(message = "Seat number must not be null")
         Integer seatNumber,
@@ -12,7 +14,7 @@ public record SeatCreateDto(
         Integer rowNumber,
 
         @NotNull(message = "Price must not be null")
-        Float price,
+        BigDecimal price,
 
         @NotNull(message = "Seat type must not be null")
         SeatType type,

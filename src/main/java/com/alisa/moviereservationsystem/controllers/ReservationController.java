@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -67,7 +68,7 @@ public class ReservationController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/revenue")
-    public ResponseEntity<Float> getTotalRevenue() {
+    public ResponseEntity<BigDecimal> getTotalRevenue() {
         return ResponseEntity.ok(reservationService.getTotalRevenue());
     }
 
@@ -78,19 +79,19 @@ public class ReservationController {
     }
 
     @GetMapping("/revenue/{showtimeId}")
-    public ResponseEntity<Float> getRevenueForShowtime(@PathVariable Long showtimeId) {
+    public ResponseEntity<BigDecimal> getRevenueForShowtime(@PathVariable Long showtimeId) {
         return ResponseEntity.ok(reservationService.getRevenueForShowtime(showtimeId));
     }
 
     @PatchMapping("/charge/{reservationId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReservationReturnDto> chargeExtraPayment(@PathVariable Long reservationId, @RequestParam Float priceDifference) throws FailedPaymentException {
+    public ResponseEntity<ReservationReturnDto> chargeExtraPayment(@PathVariable Long reservationId, @RequestParam BigDecimal priceDifference) throws FailedPaymentException {
         return ResponseEntity.ok(reservationService.chargeExtraPayment(reservationId, priceDifference));
     }
 
     @PatchMapping("/refund/{reservationId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ReservationReturnDto> refundPriceDifference(@PathVariable Long reservationId, @RequestParam Float priceDifference) throws FailedPaymentException {
+    public ResponseEntity<ReservationReturnDto> refundPriceDifference(@PathVariable Long reservationId, @RequestParam BigDecimal priceDifference) throws FailedPaymentException {
         return ResponseEntity.ok(reservationService.refundPriceDifference(reservationId, priceDifference));
     }
 }

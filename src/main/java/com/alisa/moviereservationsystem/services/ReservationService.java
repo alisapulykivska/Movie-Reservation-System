@@ -11,6 +11,7 @@ import com.alisa.moviereservationsystem.models.CustomUser;
 import com.alisa.moviereservationsystem.models.Reservation;
 import com.alisa.moviereservationsystem.models.Seat;
 import com.alisa.moviereservationsystem.models.Showtime;
+import com.alisa.moviereservationsystem.models.enums.PaymentStatus;
 import com.alisa.moviereservationsystem.models.enums.ReservationStatus;
 import com.alisa.moviereservationsystem.models.enums.SeatStatus;
 import com.alisa.moviereservationsystem.models.enums.ShowtimeStatus;
@@ -23,6 +24,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -68,15 +70,16 @@ public class ReservationService {
             throw new SeatsUnavailableException("One or more seats are unavailable");
         }
 
-        Float multiplier = switch(showtime.getShowtimeType()) {
-            case Premiere -> 1.5f;
-            case Standard -> 1.0f;
-            case Preview -> 2.0f;
+        BigDecimal multiplier = switch(showtime.getShowtimeType()) {
+            case Premiere -> new BigDecimal("1.5");
+            case Standard -> new BigDecimal("1.0");
+            case Preview -> new BigDecimal("2.0");
         };
 
-        Float generalPrice = seats.stream()
+        BigDecimal generalPrice = seats.stream()
                 .map(Seat::getPrice)
-                .reduce(0f, Float::sum) * multiplier;
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .multiply(multiplier);
 
         Reservation newReservation = new Reservation();
 
@@ -117,7 +120,7 @@ public class ReservationService {
                 reservation.getGeneralPrice())
         );
 
-        if(paymentResponse.status().equals("SUCCESS")) {
+        if(paymentResponse.status() == PaymentStatus.SUCCESS) {
             reservation.setStatus(ReservationStatus.Confirmed);
             reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
             seatRepository.saveAll(reservation.getSeats());
@@ -154,19 +157,20 @@ public class ReservationService {
             throw new SeatsUnavailableException("One or more seats are unavailable");
         }
 
-        Float oldPrice = oldReservation.getGeneralPrice();
+        BigDecimal oldPrice = oldReservation.getGeneralPrice();
 
-        Float multiplier = switch(oldReservation.getShowtime().getShowtimeType()) {
-            case Premiere -> 1.5f;
-            case Standard -> 1.0f;
-            case Preview -> 2.0f;
+        BigDecimal multiplier = switch(oldReservation.getShowtime().getShowtimeType()) {
+            case Premiere -> new BigDecimal("1.5");
+            case Standard -> new BigDecimal("1.0");
+            case Preview -> new BigDecimal("2.0");
         };
 
-        Float newPrice = newSeats.stream()
+        BigDecimal newPrice = newSeats.stream()
                         .map(Seat::getPrice)
-                        .reduce(0f, Float::sum) * multiplier;
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .multiply(multiplier);
 
-        Float priceDifference = newPrice - oldPrice;
+        BigDecimal priceDifference = newPrice.subtract(oldPrice);
 
         oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
         seatRepository.saveAll(oldReservation.getSeats());
@@ -190,7 +194,7 @@ public class ReservationService {
         );
     }
 
-    public ReservationReturnDto chargeExtraPayment(Long reservationId, Float priceDifference) throws FailedPaymentException {
+    public ReservationReturnDto chargeExtraPayment(Long reservationId, BigDecimal priceDifference) throws FailedPaymentException {
         Reservation reservation =  reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         if (reservation.getStatus() != ReservationStatus.Confirmed) {
@@ -203,14 +207,14 @@ public class ReservationService {
                 priceDifference
         ));
 
-        if(paymentResponse.status().equals("FAILED")) {
+        if(paymentResponse.status() == PaymentStatus.FAILED) {
             throw new FailedPaymentException("Extra payment failed");
         }
 
         return toReturnDto(reservation);
     }
 
-    public ReservationReturnDto refundPriceDifference(Long reservationId, Float priceDifference) throws FailedPaymentException {
+    public ReservationReturnDto refundPriceDifference(Long reservationId, BigDecimal priceDifference) throws FailedPaymentException {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         if (reservation.getStatus() != ReservationStatus.Confirmed) {
@@ -223,7 +227,7 @@ public class ReservationService {
                 priceDifference
         ));
 
-        if (refundResponse.status().equals("REFUND FAILED")) {
+        if (refundResponse.status() == PaymentStatus.REFUND_FAILED) {
             throw new FailedPaymentException("Refund failed, please contact support");
         }
 
@@ -285,7 +289,7 @@ public class ReservationService {
                     reservation.getGeneralPrice()
             ));
 
-            if(refundResponse.status().equals("REFUND FAILED")) {
+            if(refundResponse.status() == PaymentStatus.REFUND_FAILED) {
                 throw new FailedPaymentException("Refund failed, please contact support");
             }
         }
@@ -297,23 +301,23 @@ public class ReservationService {
         return toReturnDto(reservationRepository.save(reservation));
     }
 
-    public Float getTotalRevenue() {
+    public BigDecimal getTotalRevenue() {
         return reservationRepository.findAll().stream()
                 .filter(r -> r.getStatus() == ReservationStatus.Confirmed)
                 .map(Reservation :: getGeneralPrice)
-                .reduce(0f, Float ::sum);
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public Long getReservationCountForMovie(Long movieId) {
         return reservationRepository.countByShowtime_Movie_Id(movieId);
     }
 
-    public Float getRevenueForShowtime(Long showtimeId) {
+    public BigDecimal getRevenueForShowtime(Long showtimeId) {
         return reservationRepository.findAll().stream()
                 .filter(r -> r.getStatus() == ReservationStatus.Confirmed)
                 .filter(r -> r.getShowtime().getId().equals(showtimeId))
                 .map(Reservation::getGeneralPrice)
-                .reduce(0f, Float::sum);
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private ReservationReturnDto toReturnDto(Reservation reservation) {
