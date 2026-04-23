@@ -5,14 +5,12 @@ import com.alisa.moviereservationsystem.models.enums.ReservationStatus;
 import com.alisa.moviereservationsystem.models.enums.SeatStatus;
 import com.alisa.moviereservationsystem.repositories.ReservationRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
-import com.alisa.moviereservationsystem.services.ReservationService;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -28,12 +26,12 @@ public class ReservationScheduler {
     public void expirePendingReservations() {
         Instant cutoff = Instant.now().minus(15, ChronoUnit.MINUTES);
         List<Reservation> expiredReservations = reservationRepository
-                .findByStatusAndTimeStampBefore(ReservationStatus.Pending, cutoff);
+                .findByStatusAndTimeStampBefore(ReservationStatus.PENDING, cutoff);
 
         expiredReservations.forEach(reservation -> {
-            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
             seatRepository.saveAll(reservation.getSeats());
-            reservation.setStatus(ReservationStatus.Failed);
+            reservation.setStatus(ReservationStatus.FAILED);
         });
             reservationRepository.saveAll(expiredReservations);
     }

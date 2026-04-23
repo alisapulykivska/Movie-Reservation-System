@@ -101,4 +101,12 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT
         );
     }
+
+    @ExceptionHandler
+    public ResponseEntity<ErrorResponse> failedPayment(FailedPaymentException e) {
+        return new ResponseEntity<>(
+                new ErrorResponse(e.getMessage(), 500, Instant.now()),
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
 }

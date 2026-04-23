@@ -40,7 +40,7 @@ public class ShowtimeService {
 
         newShowtime.setDateTime(showtime.dateTime());
         newShowtime.setShowtimeType(showtime.showtimeType());
-        newShowtime.setStatus(ShowtimeStatus.Upcoming);
+        newShowtime.setStatus(ShowtimeStatus.UPCOMING);
         Movie movie = movieRepository.findById(showtime.movieId())
                 .orElseThrow(() -> new InformationNotFoundException("Movie not found"));
         newShowtime.setMovie(movie);

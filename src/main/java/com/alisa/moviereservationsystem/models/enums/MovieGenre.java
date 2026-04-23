@@ -1,14 +1,14 @@
 package com.alisa.moviereservationsystem.models.enums;
 
 public enum MovieGenre {
-    Horror,
-    Fantasy,
-    Drama,
-    Crime,
-    Noir,
-    Thriller,
-    Comedy,
-    Romance,
-    Sport,
-    ScienceFiction
+    HORROR,
+    FANTASY,
+    DRAMA,
+    CRIME,
+    NOIR,
+    THRILLER,
+    COMEDY,
+    ROMANCE,
+    SPORT,
+    SCIENCE_FICTION
 }
