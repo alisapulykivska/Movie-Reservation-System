@@ -72,7 +72,7 @@ public class MovieService {
                 .filter(movie -> movie.getGenres()
                         .stream().anyMatch(genres::contains))
                 .filter(movie -> movie.getShowtimes().stream()
-                        .anyMatch(showtime -> showtime.getStatus() == ShowtimeStatus.Upcoming))
+                        .anyMatch(showtime -> showtime.getStatus() == ShowtimeStatus.UPCOMING))
                 .map(this::toReturnDto)
                 .toList();
     }
@@ -80,7 +80,7 @@ public class MovieService {
     public List<MovieReturnDto> findMostPopularMovies() {
         return movieRepository.findAllSortedByReservationCountDesc().stream()
                 .filter(movie -> movie.getShowtimes().stream()
-                        .anyMatch(showtime -> showtime.getStatus() == ShowtimeStatus.Upcoming))
+                        .anyMatch(showtime -> showtime.getStatus() == ShowtimeStatus.UPCOMING))
                 .map(this::toReturnDto)
                 .toList();
     }

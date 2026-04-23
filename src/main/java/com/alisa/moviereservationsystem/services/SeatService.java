@@ -30,7 +30,7 @@ public class SeatService {
         newSeat.setRowNumber(seat.rowNumber());
         newSeat.setPrice(seat.price());
         newSeat.setType(seat.type());
-        newSeat.setStatus(SeatStatus.Available);
+        newSeat.setStatus(SeatStatus.AVAILABLE);
         Hall hall = hallRepository.findById(seat.hallId())
                 .orElseThrow(() -> new InformationNotFoundException("Hall not found"));
         newSeat.setHall(hall);

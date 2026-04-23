@@ -19,7 +19,6 @@ import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
 import com.alisa.moviereservationsystem.repositories.ReservationRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import com.alisa.moviereservationsystem.repositories.ShowtimeRepository;
-import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -47,12 +45,12 @@ public class ReservationService {
                 findById(reservation.showtimeId()).orElseThrow(() -> new
                         InformationNotFoundException("Showtime not found"));
 
-        if(showtime.getStatus() == ShowtimeStatus.Completed) {
+        if(showtime.getStatus() == ShowtimeStatus.COMPLETED) {
             throw new PastShowtimeException("Can't reserve seats for a past showtime");
         }
 
         if(showtime.getDateTime().isBefore(OffsetDateTime.now())) {
-            showtime.setStatus(ShowtimeStatus.Completed);
+            showtime.setStatus(ShowtimeStatus.COMPLETED);
             throw new PastShowtimeException("Can't reserve seats for a past showtime");
         }
 
@@ -64,16 +62,16 @@ public class ReservationService {
         }
 
         boolean hasUnavailableSeats = seats.stream()
-                .anyMatch(seat -> seat.getStatus() != SeatStatus.Available);
+                .anyMatch(seat -> seat.getStatus() != SeatStatus.AVAILABLE);
 
         if(hasUnavailableSeats) {
             throw new SeatsUnavailableException("One or more seats are unavailable");
         }
 
         BigDecimal multiplier = switch(showtime.getShowtimeType()) {
-            case Premiere -> new BigDecimal("1.5");
-            case Standard -> new BigDecimal("1.0");
-            case Preview -> new BigDecimal("2.0");
+            case PREMIERE -> new BigDecimal("1.5");
+            case STANDARD -> new BigDecimal("1.0");
+            case PREVIEW -> new BigDecimal("2.0");
         };
 
         BigDecimal generalPrice = seats.stream()
@@ -88,10 +86,10 @@ public class ReservationService {
         newReservation.setUser(user);
         newReservation.setGeneralPrice(generalPrice);
         newReservation.setShowtime(showtime);
-        seats.forEach(seat -> seat.setStatus(SeatStatus.Held));
+        seats.forEach(seat -> seat.setStatus(SeatStatus.HELD));
         seatRepository.saveAll(seats);
         newReservation.setSeats(seats);
-        newReservation.setStatus(ReservationStatus.Pending);
+        newReservation.setStatus(ReservationStatus.PENDING);
 
         Reservation savedReservation = reservationRepository.save(newReservation);
 
@@ -101,16 +99,16 @@ public class ReservationService {
     public ReservationReturnDto confirmReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
-        if (reservation.getStatus() != ReservationStatus.Pending) {
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
             throw new InvalidReservationStatusException("Only pending reservations can be confirmed");
         }
-        if(reservation.getShowtime().getStatus() == ShowtimeStatus.Completed) {
+        if(reservation.getShowtime().getStatus() == ShowtimeStatus.COMPLETED) {
             throw new PastShowtimeException("Can't confirm reservation for a past showtime");
         }
 
         if(reservation.getShowtime().getDateTime().isBefore(OffsetDateTime.now())) {
             Showtime showtime = reservation.getShowtime();
-            showtime.setStatus(ShowtimeStatus.Completed);
+            showtime.setStatus(ShowtimeStatus.COMPLETED);
             throw new PastShowtimeException("Can't confirm seats for a past showtime");
         }
 
@@ -121,12 +119,12 @@ public class ReservationService {
         );
 
         if(paymentResponse.status() == PaymentStatus.SUCCESS) {
-            reservation.setStatus(ReservationStatus.Confirmed);
-            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
+            reservation.setStatus(ReservationStatus.CONFIRMED);
+            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.UNAVAILABLE));
             seatRepository.saveAll(reservation.getSeats());
         } else {
-            reservation.setStatus(ReservationStatus.Failed);
-            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+            reservation.setStatus(ReservationStatus.FAILED);
+            reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
             seatRepository.saveAll(reservation.getSeats());
         }
 
@@ -137,8 +135,8 @@ public class ReservationService {
         Reservation oldReservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
-        if (oldReservation.getStatus() == ReservationStatus.Cancelled ||
-                oldReservation.getStatus() == ReservationStatus.Failed) {
+        if (oldReservation.getStatus() == ReservationStatus.CANCELLED ||
+                oldReservation.getStatus() == ReservationStatus.FAILED) {
             throw new InvalidReservationStatusException
                     ("Cannot update a cancelled or failed reservation");
         }
@@ -152,7 +150,7 @@ public class ReservationService {
         }
 
         boolean hasUnavailableSeats = newSeats.stream()
-                .anyMatch(seat -> seat.getStatus() != SeatStatus.Available);
+                .anyMatch(seat -> seat.getStatus() != SeatStatus.AVAILABLE);
         if(hasUnavailableSeats){
             throw new SeatsUnavailableException("One or more seats are unavailable");
         }
@@ -160,9 +158,9 @@ public class ReservationService {
         BigDecimal oldPrice = oldReservation.getGeneralPrice();
 
         BigDecimal multiplier = switch(oldReservation.getShowtime().getShowtimeType()) {
-            case Premiere -> new BigDecimal("1.5");
-            case Standard -> new BigDecimal("1.0");
-            case Preview -> new BigDecimal("2.0");
+            case PREMIERE -> new BigDecimal("1.5");
+            case STANDARD -> new BigDecimal("1.0");
+            case PREVIEW -> new BigDecimal("2.0");
         };
 
         BigDecimal newPrice = newSeats.stream()
@@ -172,11 +170,11 @@ public class ReservationService {
 
         BigDecimal priceDifference = newPrice.subtract(oldPrice);
 
-        oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+        oldReservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
         seatRepository.saveAll(oldReservation.getSeats());
 
         oldReservation.setSeats(newSeats);
-        newSeats.forEach(seat -> seat.setStatus(SeatStatus.Unavailable));
+        newSeats.forEach(seat -> seat.setStatus(SeatStatus.UNAVAILABLE));
         seatRepository.saveAll(newSeats);
 
         Reservation savedReservation = reservationRepository.save(oldReservation);
@@ -197,7 +195,7 @@ public class ReservationService {
     public ReservationReturnDto chargeExtraPayment(Long reservationId, BigDecimal priceDifference) throws FailedPaymentException {
         Reservation reservation =  reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
-        if (reservation.getStatus() != ReservationStatus.Confirmed) {
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
             throw new InvalidReservationStatusException("Only confirmed reservations can be charged");
         }
 
@@ -217,7 +215,7 @@ public class ReservationService {
     public ReservationReturnDto refundPriceDifference(Long reservationId, BigDecimal priceDifference) throws FailedPaymentException {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
-        if (reservation.getStatus() != ReservationStatus.Confirmed) {
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
             throw new InvalidReservationStatusException("Only confirmed reservations can be refunded");
         }
 
@@ -237,7 +235,7 @@ public class ReservationService {
     public void deleteReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
-        reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+        reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
         seatRepository.saveAll(reservation.getSeats());
         reservationRepository.deleteById(reservationId);
     }
@@ -266,23 +264,23 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
-        if (reservation.getStatus() == ReservationStatus.Cancelled ||
-                reservation.getStatus() == ReservationStatus.Failed) {
+        if (reservation.getStatus() == ReservationStatus.CANCELLED ||
+                reservation.getStatus() == ReservationStatus.FAILED) {
             throw new InvalidReservationStatusException
                     ("Cannot cancel a reservation that is already cancelled or failed");
         }
 
-        if(reservation.getShowtime().getStatus() == ShowtimeStatus.Completed) {
+        if(reservation.getShowtime().getStatus() == ShowtimeStatus.COMPLETED) {
             throw new PastShowtimeException("Can't cancel a reservation for a past showtime");
         }
 
         if(reservation.getShowtime().getDateTime().isBefore(OffsetDateTime.now())) {
             Showtime showtime = reservation.getShowtime();
-            showtime.setStatus(ShowtimeStatus.Completed);
+            showtime.setStatus(ShowtimeStatus.COMPLETED);
             throw new PastShowtimeException("Can't cancel a reservation for a past showtime");
         }
 
-        if(reservation.getStatus() == (ReservationStatus.Confirmed)) {
+        if(reservation.getStatus() == (ReservationStatus.CONFIRMED)) {
             PaymentResponseDto refundResponse = paymentService.refundPayment(new PaymentRequestDto(
                     reservationId,
                     reservation.getUser().getId(),
@@ -294,16 +292,16 @@ public class ReservationService {
             }
         }
 
-        reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.Available));
+        reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
         seatRepository.saveAll(reservation.getSeats());
 
-        reservation.setStatus(ReservationStatus.Cancelled);
+        reservation.setStatus(ReservationStatus.CANCELLED);
         return toReturnDto(reservationRepository.save(reservation));
     }
 
     public BigDecimal getTotalRevenue() {
         return reservationRepository.findAll().stream()
-                .filter(r -> r.getStatus() == ReservationStatus.Confirmed)
+                .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
                 .map(Reservation :: getGeneralPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -314,7 +312,7 @@ public class ReservationService {
 
     public BigDecimal getRevenueForShowtime(Long showtimeId) {
         return reservationRepository.findAll().stream()
-                .filter(r -> r.getStatus() == ReservationStatus.Confirmed)
+                .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
                 .filter(r -> r.getShowtime().getId().equals(showtimeId))
                 .map(Reservation::getGeneralPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

@@ -21,8 +21,8 @@ public class ShowtimeScheduler {
     @Scheduled(fixedRate = 18000000)
     public void completePassedShowtimes() {
         List<Showtime> passedShowtimes = showtimeRepository
-                .findByDateTimeBeforeAndStatus(OffsetDateTime.now(), ShowtimeStatus.Upcoming);
-        passedShowtimes.forEach(showtime -> showtime.setStatus(ShowtimeStatus.Completed));
+                .findByDateTimeBeforeAndStatus(OffsetDateTime.now(), ShowtimeStatus.UPCOMING);
+        passedShowtimes.forEach(showtime -> showtime.setStatus(ShowtimeStatus.COMPLETED));
         showtimeRepository.saveAll(passedShowtimes);
     }
 }

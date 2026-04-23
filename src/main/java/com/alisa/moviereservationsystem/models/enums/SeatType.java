@@ -1,6 +1,6 @@
 package com.alisa.moviereservationsystem.models.enums;
 
 public enum SeatType {
-    Standard,
+    STANDARD,
     VIP
 }
