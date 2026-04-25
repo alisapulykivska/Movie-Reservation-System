@@ -1,5 +1,6 @@
 package com.alisa.moviereservationsystem.services;
 
+import com.alisa.moviereservationsystem.advice.GlobalExceptionHandler;
 import com.alisa.moviereservationsystem.dto.securityDto.ChangePasswordDto;
 import com.alisa.moviereservationsystem.dto.securityDto.LoginUserDto;
 import com.alisa.moviereservationsystem.dto.securityDto.RegisterUserDto;
@@ -15,6 +16,8 @@ import com.alisa.moviereservationsystem.models.CustomUser;
 import com.alisa.moviereservationsystem.models.enums.UserRole;
 import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -40,6 +43,8 @@ public class CustomUserService {
 
     private final BCryptPasswordEncoder encoder;
     private final PasswordEncoder passwordEncoder;
+
+    private static final Logger log = LoggerFactory.getLogger(CustomUserService.class);
 
     public CustomUserReturnDto createUser(CustomUserCreateDto user) {
         CustomUser customUser = new CustomUser();
@@ -90,13 +95,19 @@ public class CustomUserService {
     }
 
     public CustomUserReturnDto promoteToAdmin(Long userId) {
+        log.info("Promoting user to admin {}", userId);
+
         CustomUser customUser =  customUserRepository.findById(userId)
                 .orElseThrow(() -> new InformationNotFoundException("User not found"));
         customUser.setUserRole(UserRole.ADMIN);
+
+        log.info("User {} promoted to admin", userId);
+
         return toReturnDto(customUserRepository.save(customUser));
     }
 
     public CustomUserReturnDto register(RegisterUserDto user) {
+        log.info("Registering user {}", user.username());
 
         if(customUserRepository.findByUsername(user.username()).isPresent()) {
             throw new DuplicateInformationException("Username is already in use");
@@ -111,10 +122,15 @@ public class CustomUserService {
         customUser.setEmail(user.email());
         customUser.setPassword(encoder.encode(user.password()));
         customUser.setUserRole(UserRole.USER);
+
+        log.info("User {} registered successfully", user.username());
+
         return toReturnDto(customUserRepository.save(customUser));
     }
 
     public String login(LoginUserDto user) {
+        log.info("Login attempt for user {}", user.username());
+
         Authentication authentication =
                 authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                         user.username(),
@@ -123,12 +139,20 @@ public class CustomUserService {
         if(authentication.isAuthenticated()) {
             CustomUser customUser = customUserRepository.findByUsername(user.username())
                     .orElseThrow(() -> new InformationNotFoundException("User not found"));
+
+            log.info("User {} logged in successfully", user.username());
+
             return jwtService.generateToken(customUser.getUsername(), customUser.getId());
         }
+
+        log.warn("Failed login attempt for user {}", user.username());
+
         return "Invalid username or password";
     }
 
     public CustomUserReturnDto changePassword(Long userId, ChangePasswordDto dto) {
+        log.info("Changing password for user {}", userId);
+
         Long authenticatedUserId = getAuthenticatedUserId();
         if(!authenticatedUserId.equals(userId) &&
                 customUserRepository.findById(userId).get().getUserRole() != UserRole.ADMIN){
@@ -146,10 +170,15 @@ public class CustomUserService {
         }
 
         user.setPassword(passwordEncoder.encode(dto.newPassword()));
+
+        log.info("Password changed for user {}", userId);
+
         return toReturnDto(customUserRepository.save(user));
     }
 
     public CustomUserReturnDto resetPassword(Long userId, ResetPasswordDto resetPasswordDto) {
+        log.info("Resetting password for user {}", userId);
+
         CustomUser user = customUserRepository.findById(userId)
                 .orElseThrow(() -> new InformationNotFoundException("User not found"));
         if(!resetPasswordDto.newPassword().equals(resetPasswordDto.confirmPassword())) {
@@ -157,6 +186,9 @@ public class CustomUserService {
         }
 
         user.setPassword(passwordEncoder.encode(resetPasswordDto.newPassword()));
+
+        log.info("Successful password reset for user {}", userId);
+
         return toReturnDto(customUserRepository.save(user));
     }
 

@@ -20,6 +20,8 @@ import com.alisa.moviereservationsystem.repositories.ReservationRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import com.alisa.moviereservationsystem.repositories.ShowtimeRepository;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +39,12 @@ public class ReservationService {
     private final ShowtimeRepository showtimeRepository;
     private final PaymentService paymentService;
 
+    private static final Logger log = LoggerFactory.getLogger(ReservationService.class);
+
     @Transactional
     public ReservationReturnDto createReservation(ReservationCreateDto reservation) {
+        log.info("Creating reservation for user {} and showtime {}", reservation.userId(), reservation.showtimeId());
+
         List<Seat> seats = seatRepository.findSeatsByIdIn(reservation.seatIds());
 
         Showtime showtime = showtimeRepository.
@@ -93,10 +99,15 @@ public class ReservationService {
 
         Reservation savedReservation = reservationRepository.save(newReservation);
 
+        log.info("Reservation created for user {} and showtime {}",
+                savedReservation.getUser(), savedReservation.getShowtime());
+
         return toReturnDto(savedReservation);
     }
 
     public ReservationReturnDto confirmReservation(Long reservationId) {
+        log.info("Confirming reservation {}", reservationId);
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         if (reservation.getStatus() != ReservationStatus.PENDING) {
@@ -122,16 +133,23 @@ public class ReservationService {
             reservation.setStatus(ReservationStatus.CONFIRMED);
             reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.UNAVAILABLE));
             seatRepository.saveAll(reservation.getSeats());
+
+            log.info("Reservation {} confirmed successfully", reservationId);
+
         } else {
             reservation.setStatus(ReservationStatus.FAILED);
             reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
             seatRepository.saveAll(reservation.getSeats());
+
+            log.error("Payment failed for reservation {}", reservationId);
         }
 
         return toReturnDto(reservationRepository.save(reservation));
     }
 
     public UpdateReservationReturnDto updateReservation(Long reservationId, ReservationUpdateDto reservation) {
+        log.info("Updating reservation {}", reservationId);
+
         Reservation oldReservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
@@ -179,6 +197,9 @@ public class ReservationService {
 
         Reservation savedReservation = reservationRepository.save(oldReservation);
 
+        log.info("Reservation {} updated, old price: {}, new price: {}, difference: {}",
+                reservationId, oldPrice, newPrice, priceDifference);
+
         return new UpdateReservationReturnDto(
                 savedReservation.getId(),
                 newPrice,
@@ -193,6 +214,8 @@ public class ReservationService {
     }
 
     public ReservationReturnDto chargeExtraPayment(Long reservationId, BigDecimal priceDifference) throws FailedPaymentException {
+        log.info("Charging extra payment of {} for reservation {}", priceDifference, reservationId);
+
         Reservation reservation =  reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
@@ -206,13 +229,17 @@ public class ReservationService {
         ));
 
         if(paymentResponse.status() == PaymentStatus.FAILED) {
+            log.error("Extra payment of {} for reservation {} failed", priceDifference, reservationId);
             throw new FailedPaymentException("Extra payment failed");
         }
 
+        log.info("Extra payment of {} for reservation {} successful", priceDifference, reservationId);
         return toReturnDto(reservation);
     }
 
     public ReservationReturnDto refundPriceDifference(Long reservationId, BigDecimal priceDifference) throws FailedPaymentException {
+        log.info("Refunding price difference of {} for reservation {}", priceDifference, reservationId);
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
@@ -226,9 +253,11 @@ public class ReservationService {
         ));
 
         if (refundResponse.status() == PaymentStatus.REFUND_FAILED) {
+            log.error("Refund of {} for reservation {} failed", priceDifference, reservationId);
             throw new FailedPaymentException("Refund failed, please contact support");
         }
 
+        log.info("Refund of {} for reservation {} successful", priceDifference, reservationId);
         return toReturnDto(reservation);
     }
 
@@ -261,6 +290,8 @@ public class ReservationService {
     }
 
     public ReservationReturnDto cancelReservation(Long reservationId) throws FailedPaymentException {
+        log.info("Canceling reservation {}", reservationId);
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InformationNotFoundException("Reservation not found"));
 
@@ -288,14 +319,17 @@ public class ReservationService {
             ));
 
             if(refundResponse.status() == PaymentStatus.REFUND_FAILED) {
+                log.error("Refund for reservation {} failed", reservationId);
                 throw new FailedPaymentException("Refund failed, please contact support");
             }
         }
 
         reservation.getSeats().forEach(seat -> seat.setStatus(SeatStatus.AVAILABLE));
         seatRepository.saveAll(reservation.getSeats());
-
         reservation.setStatus(ReservationStatus.CANCELLED);
+
+        log.info("Reservation {} has been cancelled", reservationId);
+
         return toReturnDto(reservationRepository.save(reservation));
     }
 
