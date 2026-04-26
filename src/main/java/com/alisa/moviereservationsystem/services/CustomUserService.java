@@ -47,6 +47,14 @@ public class CustomUserService {
     private static final Logger log = LoggerFactory.getLogger(CustomUserService.class);
 
     public CustomUserReturnDto createUser(CustomUserCreateDto user) {
+        if(customUserRepository.findByUsername(user.username()).isPresent()) {
+            throw new DuplicateInformationException("Username is already in use");
+        }
+
+        if(customUserRepository.findByEmail(user.email()).isPresent()) {
+            throw new DuplicateInformationException("Email is already in use");
+        }
+
         CustomUser customUser = new CustomUser();
         customUser.setUsername(user.username());
         customUser.setPassword(passwordEncoder.encode(user.password()));
@@ -75,7 +83,7 @@ public class CustomUserService {
     public void deleteUser(Long userId) {
         Long authenticatedUserId = getAuthenticatedUserId();
         if(!authenticatedUserId.equals(userId) &&
-                customUserRepository.findById(userId).get().getUserRole() != UserRole.ADMIN){
+                customUserRepository.findById(authenticatedUserId).get().getUserRole() != UserRole.ADMIN){
             throw new UnauthorizedUserException("You can only delete your own information");
         }
         customUserRepository.deleteById(userId);
