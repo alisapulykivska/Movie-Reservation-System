@@ -54,6 +54,9 @@ public class CustomUserServiceUnitTest {
 
     private MockedStatic<SecurityContextHolder> mockedSecurityContext;
 
+    private CustomUser user;
+    private CustomUser admin;
+
     @BeforeEach
     void setUp() {
         mockedSecurityContext = mockStatic(SecurityContextHolder.class);
@@ -65,6 +68,18 @@ public class CustomUserServiceUnitTest {
                 encoder,
                 passwordEncoder
         );
+
+        user = new CustomUser();
+        user.setId(1L);
+        user.setUsername("user");
+        user.setEmail("email");
+        user.setPassword("encodedOldPassword");
+        user.setUserRole(UserRole.USER);
+
+        admin = new CustomUser();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setUserRole(UserRole.ADMIN);
     }
 
     @AfterEach
@@ -110,13 +125,6 @@ public class CustomUserServiceUnitTest {
                 "exists", "email@gmail.com", "password123"
         );
 
-        CustomUser savedUser = new CustomUser();
-        savedUser.setId(4L);
-        savedUser.setUsername(registerUser.username());
-        savedUser.setEmail(registerUser.email());
-        savedUser.setPassword("encodedPassword");
-        savedUser.setUserRole(UserRole.USER);
-
         when(customUserRepository.findByUsername(registerUser.username())).thenReturn(Optional.of(new CustomUser()));
 
         assertThrows(DuplicateInformationException.class, () -> customUserService.register(registerUser));
@@ -128,13 +136,6 @@ public class CustomUserServiceUnitTest {
         RegisterUserDto registerUser = new RegisterUserDto(
                 "username", "exists@gmail.com", "password123"
         );
-
-        CustomUser savedUser = new CustomUser();
-        savedUser.setId(4L);
-        savedUser.setUsername(registerUser.username());
-        savedUser.setEmail(registerUser.email());
-        savedUser.setPassword("encodedPassword");
-        savedUser.setUserRole(UserRole.USER);
 
         when(customUserRepository.findByUsername(registerUser.username())).thenReturn(Optional.empty());
         when(customUserRepository.findByEmail(registerUser.email())).thenReturn(Optional.of(new CustomUser()));
@@ -181,13 +182,6 @@ public class CustomUserServiceUnitTest {
                 "exists", "email@gmail.com", "password123"
         );
 
-        CustomUser savedUser = new CustomUser();
-        savedUser.setId(4L);
-        savedUser.setUsername(createUser.username());
-        savedUser.setEmail(createUser.email());
-        savedUser.setPassword("encodedPassword");
-        savedUser.setUserRole(UserRole.USER);
-
         when(customUserRepository.findByUsername(createUser.username())).thenReturn(Optional.of(new CustomUser()));
 
         assertThrows(DuplicateInformationException.class, () -> customUserService.createUser(createUser));
@@ -199,13 +193,6 @@ public class CustomUserServiceUnitTest {
         CustomUserCreateDto createUser = new CustomUserCreateDto(
                 "username", "exists@gmail.com", "password123"
         );
-
-        CustomUser savedUser = new CustomUser();
-        savedUser.setId(4L);
-        savedUser.setUsername(createUser.username());
-        savedUser.setEmail(createUser.email());
-        savedUser.setPassword("encodedPassword");
-        savedUser.setUserRole(UserRole.USER);
 
         when(customUserRepository.findByUsername(createUser.username())).thenReturn(Optional.empty());
         when(customUserRepository.findByEmail(createUser.email())).thenReturn(Optional.of(new CustomUser()));
@@ -271,13 +258,7 @@ public class CustomUserServiceUnitTest {
 
     @Test
     void deleteUser_ShouldDeleteUser_WhenAdminDeletesAnotherUser() {
-        Long adminId = 1L;
         Long anotherUserId = 2L;
-
-        CustomUser admin = new CustomUser();
-        admin.setId(adminId);
-        admin.setUsername("admin");
-        admin.setUserRole(UserRole.ADMIN);
 
         Authentication auth = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -286,7 +267,7 @@ public class CustomUserServiceUnitTest {
         when(auth.getName()).thenReturn(admin.getUsername());
 
         when(customUserRepository.findByUsername(admin.getUsername())).thenReturn(Optional.of(admin));
-        when(customUserRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        when(customUserRepository.findById(admin.getId())).thenReturn(Optional.of(admin));
 
         customUserService.deleteUser(anotherUserId);
         verify(customUserRepository).deleteById(anotherUserId);
@@ -294,13 +275,7 @@ public class CustomUserServiceUnitTest {
 
     @Test
     void deleteUser_ShouldThrowException_WhenUserTriesToDeleteSomeoneElse() {
-        Long userid = 1L;
         Long anotherUserId = 2L;
-
-        CustomUser user = new CustomUser();
-        user.setId(userid);
-        user.setUsername("user");
-        user.setUserRole(UserRole.USER);
 
         Authentication auth = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -309,7 +284,7 @@ public class CustomUserServiceUnitTest {
         when(auth.getName()).thenReturn(user.getUsername());
 
         when(customUserRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-        when(customUserRepository.findById(userid)).thenReturn(Optional.of(user));
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         assertThrows(UnauthorizedUserException.class, () -> customUserService.deleteUser(anotherUserId));
         verify(customUserRepository, never()).deleteById(anyLong());
@@ -317,15 +292,9 @@ public class CustomUserServiceUnitTest {
 
     @Test
     void findUserById_ShouldReturnUser_WhenFound() {
-        CustomUser user = new CustomUser();
-        user.setId(1L);
-        user.setUsername("user");
-        user.setEmail("email");
-        user.setUserRole(UserRole.USER);
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
-        when(customUserRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        CustomUserReturnDto result = customUserService.findUserById(1L);
+        CustomUserReturnDto result = customUserService.findUserById(user.getId());
 
         assertNotNull(result);
         assertEquals(user.getUsername(), result.username());
@@ -334,26 +303,14 @@ public class CustomUserServiceUnitTest {
 
     @Test
     void findUserById_ShouldThrowException_WhenUserNotFound() {
-        CustomUser user = new CustomUser();
-        user.setId(1L);
-        user.setUsername("user");
-        user.setEmail("email");
-        user.setUserRole(UserRole.USER);
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.empty());
 
-        when(customUserRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(InformationNotFoundException.class, () -> customUserService.findUserById(1L));
+        assertThrows(InformationNotFoundException.class, () -> customUserService.findUserById(user.getId()));
     }
 
     @Test
     void promoteToAdmin_ShouldSetAdminRole_WhenFound() {
-        CustomUser user = new CustomUser();
-        user.setId(1L);
-        user.setUsername("user");
-        user.setEmail("email");
-        user.setUserRole(UserRole.USER);
-
-        when(customUserRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(customUserRepository.save(any())).thenReturn(user);
 
         customUserService.promoteToAdmin(user.getId());
@@ -364,27 +321,14 @@ public class CustomUserServiceUnitTest {
 
     @Test
     void promoteToAdmin_ShouldThrowException_WhenUserNotFound() {
-        CustomUser user = new CustomUser();
-        user.setId(1L);
-        user.setUsername("user");
-        user.setEmail("email");
-        user.setUserRole(UserRole.USER);
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.empty());
 
-        when(customUserRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(InformationNotFoundException.class, () -> customUserService.promoteToAdmin(1L));
+        assertThrows(InformationNotFoundException.class, () -> customUserService.promoteToAdmin(user.getId()));
     }
 
     @Test
     void changePassword_ShouldChangePassword_WhenValidData() {
-        Long userId = 1L;
         ChangePasswordDto changePasswordDto = new ChangePasswordDto("wrongOldPassword", "newPassword");
-
-        CustomUser user = new CustomUser();
-        user.setId(userId);
-        user.setUsername("user");
-        user.setPassword("encodedOldPassword");
-        user.setUserRole(UserRole.USER);
 
         Authentication auth = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -394,26 +338,20 @@ public class CustomUserServiceUnitTest {
         when(auth.getName()).thenReturn(user.getUsername());
 
         when(customUserRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-        when(customUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(changePasswordDto.oldPassword(), user.getPassword())).thenReturn(true);
         when(passwordEncoder.matches(changePasswordDto.newPassword(), user.getPassword())).thenReturn(false);
         when(passwordEncoder.encode(changePasswordDto.newPassword())).thenReturn(user.getPassword());
-
         when(customUserRepository.save(any(CustomUser.class))).thenReturn(user);
 
-        CustomUserReturnDto result = customUserService.changePassword(userId, changePasswordDto);
+        CustomUserReturnDto result = customUserService.changePassword(user.getId(), changePasswordDto);
         assertNotNull(result);
         verify(customUserRepository).save(any());
     }
 
     @Test
     void changePassword_ShouldThrowException_WhenOldPasswordIsIncorrect() {
-        Long userId = 1L;
         ChangePasswordDto changePasswordDto = new ChangePasswordDto("wrongOld", "newPassword");
-        CustomUser user = new CustomUser();
-        user.setId(userId);
-        user.setUsername("user");
-        user.setPassword("encodedOldPassword");
 
         Authentication auth = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -422,23 +360,18 @@ public class CustomUserServiceUnitTest {
         when(auth.getName()).thenReturn(user.getUsername());
 
         when(customUserRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-        when(customUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(changePasswordDto.oldPassword(), user.getPassword())).thenReturn(false);
 
         assertThrows(IncorrectPasswordException.class,
-                () -> customUserService.changePassword(userId, changePasswordDto));
+                () -> customUserService.changePassword(user.getId(), changePasswordDto));
 
         verify(customUserRepository, never()).save(any());
     }
 
     @Test
     void changePassword_ShouldThrowException_WhenNewPasswordSameAsOld() {
-        Long userId = 1L;
         ChangePasswordDto changePasswordDto = new ChangePasswordDto("oldPassword", "oldPassword");
-        CustomUser user = new CustomUser();
-        user.setId(userId);
-        user.setUsername("user");
-        user.setPassword("encodedOldPassword");
 
         Authentication auth = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -447,11 +380,11 @@ public class CustomUserServiceUnitTest {
         when(auth.getName()).thenReturn(user.getUsername());
 
         when(customUserRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
-        when(customUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(customUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(changePasswordDto.oldPassword(), user.getPassword())).thenReturn(true);
 
         assertThrows(IncorrectPasswordException.class,
-                () -> customUserService.changePassword(userId, changePasswordDto));
+                () -> customUserService.changePassword(user.getId(), changePasswordDto));
 
         verify(customUserRepository, never()).save(any());
     }
@@ -459,9 +392,6 @@ public class CustomUserServiceUnitTest {
     @Test
     void loginUser_ShouldReturnToken_WhenDataIsValid() {
         LoginUserDto loginDto = new LoginUserDto("user", "user@gmail.com", "password123");
-        CustomUser user = new CustomUser();
-        user.setId(1L);
-        user.setUsername("user");
 
         Authentication auth = mock(Authentication.class);
         when(auth.isAuthenticated()).thenReturn(true);
@@ -475,7 +405,7 @@ public class CustomUserServiceUnitTest {
 
         assertEquals("mocked-jwt-token", result);
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(jwtService).generateToken("user", 1L);
+        verify(jwtService).generateToken(user.getUsername(), user.getId());
     }
 
     @Test
