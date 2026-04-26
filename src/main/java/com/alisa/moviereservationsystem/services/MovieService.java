@@ -66,7 +66,6 @@ public class MovieService {
                 .toList();
     }
 
-    @Cacheable(value = "movies", key = "#genres")
     public List<MovieReturnDto> findAllMoviesByGenres(List<MovieGenre> genres) {
         return movieRepository.findAll().stream()
                 .filter(movie -> movie.getGenres()

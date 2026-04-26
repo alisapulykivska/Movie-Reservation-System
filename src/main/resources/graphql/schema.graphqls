@@ -1,0 +1,14 @@
+type Query {
+    searchMovies(title: String): [Movie]
+    moviesByGenres(genres: [String]): [Movie]
+    movieById(id: ID): Movie
+    allMovies: [Movie]
+}
+
+type Movie {
+    id: ID
+    title: String
+    description: String
+    posterUrl: String
+    genres: [String]
+}
