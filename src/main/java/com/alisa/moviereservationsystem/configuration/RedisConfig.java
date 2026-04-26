@@ -1,5 +1,6 @@
 package com.alisa.moviereservationsystem.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -15,10 +16,10 @@ import java.time.Duration;
 @Configuration
 public class RedisConfig {
     @Bean
-    public RedisConnectionFactory rddConnectionFactory() {
-        return new LettuceConnectionFactory();
+    public LettuceConnectionFactory redisConnectionFactory(
+            @Value("${spring.data.redis.host:redis}") String host) {
+        return new LettuceConnectionFactory(host, 6379);
     }
-
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();

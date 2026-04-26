@@ -42,7 +42,8 @@ public class SecurityConfig {
                 .csrf(customizer -> customizer.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers
-                                ("/", "/user/register", "/user/login/**").permitAll()
+                                ("/", "/user/register", "/user/login/**", "/graphiql",
+                                        "/graphql" ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
