@@ -1,0 +1,9 @@
+package com.alisa.moviereservationsystem.dto.returnDto;
+
+import com.alisa.moviereservationsystem.models.enums.SeatStatus;
+import com.alisa.moviereservationsystem.models.enums.SeatType;
+
+import java.math.BigDecimal;
+
+public record SeatReturnDto(Long id, Integer seatNumber, Integer rowNumber, BigDecimal price, SeatType type, SeatStatus status, Long hallId) {
+}
