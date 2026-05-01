@@ -1,6 +1,5 @@
 package com.alisa.moviereservationsystem.services;
 
-import com.alisa.moviereservationsystem.models.CustomUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;

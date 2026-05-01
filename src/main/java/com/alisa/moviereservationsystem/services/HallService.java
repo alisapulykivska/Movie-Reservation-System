@@ -9,10 +9,6 @@ import com.alisa.moviereservationsystem.models.Seat;
 import com.alisa.moviereservationsystem.repositories.HallRepository;
 import com.alisa.moviereservationsystem.repositories.SeatRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.security.crypto.password.AbstractValidatingPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

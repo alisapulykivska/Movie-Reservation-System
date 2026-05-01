@@ -1,9 +1,6 @@
 package com.alisa.moviereservationsystem.repositories;
 
-import com.alisa.moviereservationsystem.dto.returnDto.MovieReturnDto;
 import com.alisa.moviereservationsystem.models.Movie;
-import com.alisa.moviereservationsystem.models.enums.MovieGenre;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

@@ -6,7 +6,6 @@ import com.alisa.moviereservationsystem.dto.updateDto.MovieUpdateDto;
 import com.alisa.moviereservationsystem.models.enums.MovieGenre;
 import com.alisa.moviereservationsystem.services.MovieService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.FutureOrPresent;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

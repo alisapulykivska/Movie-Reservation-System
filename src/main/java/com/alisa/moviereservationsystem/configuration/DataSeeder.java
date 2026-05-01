@@ -3,7 +3,6 @@ package com.alisa.moviereservationsystem.configuration;
 import com.alisa.moviereservationsystem.models.CustomUser;
 import com.alisa.moviereservationsystem.models.enums.UserRole;
 import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;

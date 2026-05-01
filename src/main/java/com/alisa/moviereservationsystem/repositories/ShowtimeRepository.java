@@ -3,11 +3,7 @@ package com.alisa.moviereservationsystem.repositories;
 import com.alisa.moviereservationsystem.models.Showtime;
 import com.alisa.moviereservationsystem.models.enums.ShowtimeStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 

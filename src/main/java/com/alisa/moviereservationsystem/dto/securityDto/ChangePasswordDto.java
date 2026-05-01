@@ -1,8 +1,6 @@
 package com.alisa.moviereservationsystem.dto.securityDto;
 
-import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ChangePasswordDto(

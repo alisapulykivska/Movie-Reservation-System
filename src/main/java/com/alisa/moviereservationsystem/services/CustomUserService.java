@@ -1,6 +1,5 @@
 package com.alisa.moviereservationsystem.services;
 
-import com.alisa.moviereservationsystem.advice.GlobalExceptionHandler;
 import com.alisa.moviereservationsystem.dto.securityDto.ChangePasswordDto;
 import com.alisa.moviereservationsystem.dto.securityDto.LoginUserDto;
 import com.alisa.moviereservationsystem.dto.securityDto.RegisterUserDto;
@@ -18,9 +17,6 @@ import com.alisa.moviereservationsystem.repositories.CustomUserRepository;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
